@@ -1,0 +1,10 @@
+<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <!-- Hexagon background -->
+  <polygon
+    points="24,2 43,13 43,35 24,46 5,35 5,13"
+    fill="#10b981"
+  />
+  <!-- White medical cross -->
+  <rect x="20" y="13" width="8" height="22" rx="2" fill="white"/>
+  <rect x="13" y="20" width="22" height="8" rx="2" fill="white"/>
+</svg>
