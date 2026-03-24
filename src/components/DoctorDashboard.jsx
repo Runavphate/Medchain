@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { getRecords, requestAccessOnChain, getAuditLog } from "../utils/contract";
 import { decryptAndViewFile } from "../utils/ipfs";
 import LoadingOverlay from "./LoadingOverlay";
-import ConfirmDialog from "./ConfirmDialog";
 import { ToastContainer, useToast } from "./Toast";
 
 const CATEGORY_COLORS = {

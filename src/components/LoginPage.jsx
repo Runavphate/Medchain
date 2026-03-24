@@ -5,11 +5,6 @@ function LoginPage({ connectWallet, connectWalletConnect, darkMode }) {
   const hasMetaMask = typeof window.ethereum !== "undefined";
   const dm = darkMode;
 
-  const boxBg = dm ? "#1e293b" : "#ffffff";
-  const textPrimary = dm ? "#f1f5f9" : "#0f172a";
-  const textSecondary = dm ? "#94a3b8" : "#64748b";
-  const borderColor = dm ? "#334155" : "#e2e8f0";
-
   return (
     <div
       style={{
