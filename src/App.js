@@ -2,8 +2,11 @@ import React, { useState, useEffect } from "react";
 import PatientDashboard from "./components/PatientDashboard";
 import DoctorDashboard from "./components/DoctorDashboard";
 import LoginPage from "./components/LoginPage";
+import NotificationBell from "./components/NotificationBell";
 import EthereumProvider from "@walletconnect/ethereum-provider";
+import { setGlobalProvider } from "./utils/contract";
 import logo from "./assets/medchain-logo.svg";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 
 const SEPOLIA_CHAIN_ID = "0xaa36a7";
 
@@ -11,6 +14,34 @@ function App() {
   const [account, setAccount] = useState("");
   const [role, setRole] = useState("");
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("darkMode") === "true");
+
+  const { login, logout, authenticated, user } = usePrivy();
+  const { wallets } = useWallets();
+
+  // Privy Wallet Sync
+  useEffect(() => {
+    const syncPrivyWallet = async () => {
+      if (authenticated && wallets.length > 0) {
+        const embeddedWallet = wallets[0]; // Primary Privy wallet
+        setAccount(embeddedWallet.address);
+
+        // Force switch to Sepolia if not already on it
+        const sepoliaChainId = 'eip155:11155111';
+        if (embeddedWallet.chainId !== sepoliaChainId) {
+          try {
+            await embeddedWallet.switchChain(11155111);
+          } catch (error) {
+            console.error("Failed to switch Privy wallet to Sepolia:", error);
+            alert("Please switch your wallet to the Sepolia Testnet inside your app!");
+          }
+        }
+
+        const provider = await embeddedWallet.getEthereumProvider();
+        setGlobalProvider(provider);
+      }
+    };
+    syncPrivyWallet();
+  }, [authenticated, wallets]);
 
   // Apply / remove 'dark' class on <html> for Tailwind
   useEffect(() => {
@@ -46,6 +77,7 @@ function App() {
     }
 
     setAccount(accounts[0]);
+    setGlobalProvider(window.ethereum);
   };
 
   const connectWalletConnect = async () => {
@@ -53,27 +85,74 @@ function App() {
       const provider = await EthereumProvider.init({
         projectId: "1c72c1484a9d982f01b4ce42b1312fa0",
         chains: [11155111],
+        optionalChains: [11155111],
+        rpcMap: {
+          11155111: "https://ethereum-sepolia-rpc.publicnode.com"
+        },
         showQrModal: true,
         qrModalOptions: { themeMode: "light" },
       });
 
       if (provider.session) await provider.disconnect();
 
-      provider.on("connect", () => {
-        const accs = provider.accounts;
-        if (accs && accs.length > 0) setAccount(accs[0]);
+      // Ensure we are on Sepolia after connection
+      provider.on("display_uri", (uri) => {
+        console.log("WC URI:", uri);
       });
 
-      provider.on("disconnect", () => { setAccount(""); setRole(""); });
+      provider.on("connect", () => {
+        const accs = provider.accounts;
+        if (accs && accs.length > 0) {
+          setAccount(accs[0]);
+          setGlobalProvider(provider);
+        }
+      });
+
+      provider.on("disconnect", () => { 
+        setAccount(""); setRole(""); setGlobalProvider(null); 
+      });
 
       const accounts = await provider.enable();
-      if (accounts && accounts.length > 0) setAccount(accounts[0]);
+      if (accounts && accounts.length > 0) {
+        setAccount(accounts[0]);
+        setGlobalProvider(provider);
+
+        // Check and switch chain if not on Sepolia
+        const chainId = await provider.request({ method: "eth_chainId" });
+        const targetChainId = "0xaa36a7"; // Sepolia
+        if (chainId !== targetChainId && chainId !== 11155111) {
+          try {
+            await provider.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: targetChainId }],
+            });
+          } catch (switchError) {
+            console.error("Failed to switch chain:", switchError);
+            alert("Please switch your wallet to Sepolia Testnet");
+          }
+        }
+      }
     } catch (err) {
       console.error("WalletConnect error:", err);
+      // Recovery for the "No matching key / Session topic doesn't exist" error
+      if (err.message.toLowerCase().includes("session topic") || err.message.toLowerCase().includes("no matching key")) {
+        console.warn("Broken session detected. Clearing WalletConnect cache...");
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith("wc@2") || key.includes("walletconnect")) {
+            localStorage.removeItem(key);
+          }
+        });
+        alert("Wallet session was broken. We've reset the connection. Please try again.");
+      }
     }
   };
 
-  const handleDisconnect = () => { setAccount(""); setRole(""); };
+  const handleDisconnect = () => { 
+    setAccount(""); 
+    setRole(""); 
+    setGlobalProvider(null); 
+    if (authenticated) logout();
+  };
 
   React.useEffect(() => {
     if (!window.ethereum) return;
@@ -129,6 +208,11 @@ function App() {
               {dm ? "☀️" : "🌙"}
             </button>
 
+            {/* Notification Bell — visible once wallet is connected */}
+            {account && (
+              <NotificationBell account={account} role={role} darkMode={darkMode} />
+            )}
+
             {account && (
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                 <span
@@ -149,7 +233,7 @@ function App() {
       </nav>
 
       <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "6rem 2rem 3rem" }}>
-        {!account && <LoginPage connectWallet={connectWallet} connectWalletConnect={connectWalletConnect} darkMode={darkMode} />}
+        {!account && <LoginPage connectWallet={connectWallet} connectWalletConnect={connectWalletConnect} connectPrivy={login} darkMode={darkMode} />}
 
         {account && !role && (
           <div style={{ minHeight: "calc(100vh - 120px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem" }}>

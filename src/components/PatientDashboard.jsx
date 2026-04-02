@@ -9,6 +9,7 @@ import {
 import LoadingOverlay from "./LoadingOverlay";
 import ConfirmDialog from "./ConfirmDialog";
 import { ToastContainer, useToast } from "./Toast";
+import MedicationTracker from "./MedicationTracker";
 
 const CATEGORIES = ["Lab Report", "Prescription", "X-Ray", "Discharge Summary", "Other"];
 const CATEGORY_COLORS = {
@@ -511,20 +512,19 @@ function PatientDashboard({ account, darkMode }) {
         </div>
 
         {/* ── Tab Bar ──────────────────────────────────────────── */}
-        {(uploadedCids.length > 0 || grantedDoctors.length > 0) && (
-          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
-            {[
-              { id: "records", label: `📋 Records (${uploadedCids.length})` },
-              { id: "analytics", label: "📊 Analytics" },
-              { id: "activity", label: `🕑 Activity (${activityLog.length})` },
-              { id: "audit", label: "⛓ Audit Log" },
-              { id: "qr", label: "📷 QR Code" },
-              { id: "access", label: `🩺 Access (${grantedDoctors.length})` },
-            ].map(t => (
-              <button key={t.id} style={tabStyle(t.id)} onClick={() => setActiveTab(t.id)}>{t.label}</button>
-            ))}
-          </div>
-        )}
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
+          {[
+            { id: "records", label: `📋 Records (${uploadedCids.length})` },
+            { id: "meds", label: "💊 Medications" },
+            { id: "analytics", label: "📊 Analytics" },
+            { id: "activity", label: `🕑 Activity (${activityLog.length})` },
+            { id: "audit", label: "⛓ Audit Log" },
+            { id: "qr", label: "📷 QR Code" },
+            { id: "access", label: `🩺 Access (${grantedDoctors.length})` },
+          ].map(t => (
+            <button key={t.id} style={tabStyle(t.id)} onClick={() => setActiveTab(t.id)}>{t.label}</button>
+          ))}
+        </div>
 
         {/* ── Tab: Records ─────────────────────────────────────── */}
         {activeTab === "records" && uploadedCids.length > 0 && (
@@ -579,6 +579,14 @@ function PatientDashboard({ account, darkMode }) {
             <p style={{ fontSize: "3rem" }}>📂</p>
             <p style={{ color: textPrimary, fontWeight: 700, marginTop: "0.75rem" }}>No records yet</p>
             <p style={{ color: textMuted, fontSize: "0.85rem" }}>Upload your first record using the form above.</p>
+          </div>
+        )}
+
+        {/* ── Tab: Medications ──────────────────────────────── */}
+        {activeTab === "meds" && (
+          <div className="card" style={{ background: cardBg, border: `1px solid ${cardBorder}` }}>
+            <h3 className="card-header" style={{ color: textPrimary }}>💊 Medication Tracker</h3>
+            <MedicationTracker account={account} darkMode={darkMode} />
           </div>
         )}
 

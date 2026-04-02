@@ -210,8 +210,14 @@ const CONTRACT_ABI = [
 	}
 ];
 
+let customProvider = null;
+
+export const setGlobalProvider = (provider) => {
+	customProvider = provider;
+};
+
 const getContract = async () => {
-	const provider = new BrowserProvider(window.ethereum);
+	const provider = new BrowserProvider(customProvider || window.ethereum);
 	const signer = await provider.getSigner();
 	return new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 };
@@ -268,7 +274,7 @@ export const clearRequest = async (doctorAddress) => {
 // Read on-chain events for an account and return a unified audit log
 export const getAuditLog = async (account) => {
 	try {
-		const provider = new (await import("ethers")).BrowserProvider(window.ethereum);
+		const provider = new (await import("ethers")).BrowserProvider(customProvider || window.ethereum);
 		const contract = new (await import("ethers")).Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
 
 		const normalize = (addr) => addr.toLowerCase();

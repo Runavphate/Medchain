@@ -3,6 +3,7 @@ import { getRecords, requestAccessOnChain, getAuditLog } from "../utils/contract
 import { decryptAndViewFile } from "../utils/ipfs";
 import LoadingOverlay from "./LoadingOverlay";
 import { ToastContainer, useToast } from "./Toast";
+import DoctorNotes from "./DoctorNotes";
 
 const CATEGORY_COLORS = {
   "Lab Report": { bg: "#dbeafe", color: "#1d4ed8" },
@@ -312,10 +313,11 @@ function DoctorDashboard({ account, darkMode }) {
           {requestSent && <p style={{ color: "#16a34a", fontSize: "0.875rem", marginTop: "0.75rem" }}>⏳ Waiting for patient to approve. Click "View Records" to check.</p>}
         </div>
 
-        {/* Tab bar — shown when there are records OR activity */}
-        {(records.length > 0 || activityLog.length > 0) && (
+        {/* Tab bar — shown when there are records OR activity OR a valid patient address */}
+        {(records.length > 0 || activityLog.length > 0 || (patient.trim() && isValidAddress(patient))) && (
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
             {records.length > 0 && <button style={tabStyle("records")} onClick={() => setActiveTab("records")}>📂 Records ({records.length})</button>}
+            {patient.trim() && isValidAddress(patient) && <button style={tabStyle("notes")} onClick={() => setActiveTab("notes")}>📝 Notes</button>}
             <button style={tabStyle("activity")} onClick={() => setActiveTab("activity")}>🕑 Activity ({activityLog.length})</button>
             <button style={tabStyle("audit")} onClick={() => setActiveTab("audit")}>⛓ Audit Log</button>
           </div>
@@ -370,6 +372,19 @@ function DoctorDashboard({ account, darkMode }) {
                 ))}
               </ul>
             )}
+          </div>
+        )}
+
+        {/* Notes Tab */}
+        {activeTab === "notes" && (
+          <div className="card" style={{ background: cardBg, border: `1px solid ${cardBorder}` }}>
+            <h3 className="card-header" style={{ color: textPrimary }}>📝 Clinical Notes & Prescriptions</h3>
+            <DoctorNotes
+              account={account}
+              patientAddress={patient.trim()}
+              patientName={patientName}
+              darkMode={darkMode}
+            />
           </div>
         )}
 

@@ -1,7 +1,7 @@
 import React from "react";
 import logo from "../assets/medchain-logo.svg";
 
-function LoginPage({ connectWallet, connectWalletConnect, darkMode }) {
+function LoginPage({ connectWallet, connectWalletConnect, connectPrivy, darkMode }) {
   const hasMetaMask = typeof window.ethereum !== "undefined";
   const dm = darkMode;
 
@@ -254,46 +254,53 @@ function LoginPage({ connectWallet, connectWalletConnect, darkMode }) {
             </>
           )}
 
-          {/* WalletConnect QR Button */}
+          {/* Privy Login Button — Secondary Option */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: "1rem", margin: "1.5rem 0 1rem",
+          }}>
+            <div style={{ flex: 1, height: "1px", background: dm ? "#334155" : "#e2e8f0", opacity: 0.5 }} />
+            <span style={{ color: dm ? "#64748b" : "#94a3b8", fontSize: "0.75rem", whiteSpace: "nowrap" }}>or use digital identity</span>
+            <div style={{ flex: 1, height: "1px", background: dm ? "#334155" : "#e2e8f0", opacity: 0.5 }} />
+          </div>
+
           <button
-            onClick={connectWalletConnect}
+            onClick={connectPrivy}
             style={{
               width: "100%",
-              padding: "0.9rem 1.5rem",
-              background: dm ? "transparent" : "#fff",
-              color: dm ? "#f1f5f9" : "#334155",
-              border: `2px solid ${dm ? "#334155" : "#e2e8f0"}`,
+              padding: "0.8rem 1.5rem",
+              background: dm ? "rgba(99, 102, 241, 0.1)" : "#f1f5f9",
+              color: dm ? "#a5b4fc" : "#4f46e5",
+              border: `1px solid ${dm ? "rgba(99, 102, 241, 0.3)" : "#e2e8f0"}`,
               borderRadius: "14px",
-              fontSize: "1rem",
+              fontSize: "0.95rem",
               fontWeight: 600,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: "0.75rem",
-              marginTop: "0.75rem",
-              transition: "border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease",
+              transition: "all 0.2s ease",
             }}
             onMouseEnter={e => {
+              e.currentTarget.style.background = dm ? "rgba(99, 102, 241, 0.2)" : "#e2e8f0";
               e.currentTarget.style.borderColor = "#6366f1";
-              e.currentTarget.style.boxShadow = dm ? "0 4px 14px rgba(99,102,241,0.25)" : "0 4px 14px rgba(99,102,241,0.15)";
-              e.currentTarget.style.background = dm ? "#1e293b" : "#f8fafc";
+              e.currentTarget.style.transform = "translateY(-1px)";
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.borderColor = dm ? "#334155" : "#e2e8f0";
-              e.currentTarget.style.boxShadow = "none";
-              e.currentTarget.style.background = dm ? "transparent" : "#fff";
+              e.currentTarget.style.background = dm ? "rgba(99, 102, 241, 0.1)" : "#f1f5f9";
+              e.currentTarget.style.borderColor = dm ? "rgba(99, 102, 241, 0.3)" : "#e2e8f0";
+              e.currentTarget.style.transform = "translateY(0)";
             }}
           >
-            <span style={{ fontSize: "1.2rem" }}>📱</span>
-            Scan QR · MetaMask Mobile
+            <span style={{ fontSize: "1.2rem" }}>🛡️</span>
+            Login with Email/Wallets
           </button>
 
 
           {/* Footer note */}
           {!hasMetaMask && (
             <p style={{ color: dm ? "#fcd34d" : "#f97316", fontSize: "0.75rem", marginTop: "0.5rem", lineHeight: 1.5, background: dm ? "#451a03" : "#fff7ed", padding: "0.4rem 0.75rem", borderRadius: "8px" }}>
-              💡 No extension? Use <strong style={{ color: dm ? "#fbbf24" : "#ea580c" }}>Scan QR · MetaMask Mobile</strong> below to connect from your phone instead.
+              💡 No extension? Use <strong style={{ color: dm ? "#fbbf24" : "#ea580c" }}>Login with Email/Wallets</strong> to connect from your phone or desktop.
             </p>
           )}
           <p style={{ color: dm ? "#64748b" : "#94a3b8", fontSize: "0.78rem", marginTop: "0.75rem", lineHeight: 1.5 }}>
