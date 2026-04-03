@@ -37,6 +37,9 @@ module.exports = {
                     __dirname,
                     "src/stubs/async-storage.js"
                 ),
+                // Ignore farcaster optional packages that throw missing module errors
+                "@farcaster/mini-app-solana": false,
+                "@farcaster/miniapp-sdk": false,
             };
 
             webpackConfig.plugins = [
