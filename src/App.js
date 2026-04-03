@@ -15,7 +15,7 @@ function App() {
   const [role, setRole] = useState("");
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("darkMode") === "true");
 
-  const { login, logout, authenticated, user } = usePrivy();
+  const { login, logout, authenticated } = usePrivy();
   const { wallets } = useWallets();
 
   // Privy Wallet Sync
