@@ -26,6 +26,7 @@ root.render(
       appId="cmnh3xh8800d60cjolzfngexr"
       config={{
         loginMethods: ['email', 'wallet', 'google', 'github'],
+        walletConnectCloudProjectId: "e6f8510a21ab31295db28399eab4a8dd", // Enables the WalletConnect QR code
         appearance: {
           theme: 'dark',
           accentColor: '#6366f1',
