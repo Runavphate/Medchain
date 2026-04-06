@@ -9,8 +9,6 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^13.5.0",
-    "@walletconnect/ethereum-provider": "^2.23.7",
-    "@walletconnect/modal": "^2.7.0",
     "assert": "^2.1.0",
     "axios": "^1.13.6",
     "buffer": "^6.0.3",

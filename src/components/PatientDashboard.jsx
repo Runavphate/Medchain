@@ -10,6 +10,7 @@ import LoadingOverlay from "./LoadingOverlay";
 import ConfirmDialog from "./ConfirmDialog";
 import { ToastContainer, useToast } from "./Toast";
 import MedicationTracker from "./MedicationTracker";
+import Messaging from "./Messaging";
 
 const CATEGORIES = ["Lab Report", "Prescription", "X-Ray", "Discharge Summary", "Other"];
 const CATEGORY_COLORS = {
@@ -106,6 +107,8 @@ function PatientDashboard({ account, darkMode }) {
   const [nameInput, setNameInput] = useState("");
   const [accessRequests, setAccessRequests] = useState([]);
   const [grantedDoctors, setGrantedDoctors] = useState([]);
+  const [selectedDoctorForChat, setSelectedDoctorForChat] = useState("");
+  const [registeredDoctors, setRegisteredDoctors] = useState([]);
 
   // Filtering
   const [filterText, setFilterText] = useState("");
@@ -149,6 +152,18 @@ function PatientDashboard({ account, darkMode }) {
     setActivityLog(getLocalLog(account));
     loadRequests();
     const interval = setInterval(loadRequests, 5000);
+
+    const allDocs = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.toLowerCase().startsWith("doctorname_")) {
+            const addr = key.split("_")[1];
+            const name = localStorage.getItem(key);
+            if (name) allDocs.push({ addr, name });
+        }
+    }
+    setRegisteredDoctors(allDocs);
+
     return () => clearInterval(interval);
   }, [account, loadRequests]);
 
@@ -440,8 +455,11 @@ function PatientDashboard({ account, darkMode }) {
         {accessRequests.length > 0 && (
           <div className="mb-6">
             {accessRequests.map(addr => {
-              const dName = localStorage.getItem(`doctorName_${addr}`);
-              const dHospital = localStorage.getItem(`hospitalName_${addr}`);
+              let dName = ""; let dHospital = "";
+              for (let i = 0; i < localStorage.length; i++) {
+                 if (localStorage.key(i).toLowerCase() === `doctorname_${addr}`.toLowerCase()) dName = localStorage.getItem(localStorage.key(i));
+                 if (localStorage.key(i).toLowerCase() === `hospitalname_${addr}`.toLowerCase()) dHospital = localStorage.getItem(localStorage.key(i));
+              }
               return (
                 <div key={addr} style={{
                   background: "linear-gradient(135deg, #fffbeb, #fef3c7)", border: "1.5px solid #fbbf24",
@@ -504,6 +522,21 @@ function PatientDashboard({ account, darkMode }) {
         {/* Grant Access */}
         <div className="card mb-8" style={{ background: cardBg, border: `1px solid ${cardBorder}` }}>
           <h3 className="card-header" style={{ color: textPrimary }}>🔐 Grant Doctor Access</h3>
+          
+          {registeredDoctors.length > 0 && (
+            <div style={{ marginBottom: "1rem" }}>
+              <p style={{ fontSize: "0.8rem", color: textMuted, fontWeight: 700, marginBottom: "0.5rem", textTransform: "uppercase" }}>Registered Doctors</p>
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", maxHeight: "120px", overflowY: "auto", padding: "0.75rem", background: dm ? "#0f172a" : "#f8fafc", borderRadius: "10px", border: `1px solid ${cardBorder}` }}>
+                {registeredDoctors.map(d => (
+                  <button key={d.addr} onClick={() => { setDoctor(d.addr); setDoctorError(""); }}
+                    style={{ padding: "0.45rem 1rem", background: doctor === d.addr ? "linear-gradient(135deg, #3b82f6, #2563eb)" : (dm ? "#1e293b" : "#fff"), color: doctor === d.addr ? "#fff" : textPrimary, border: `1px solid ${doctor === d.addr ? "#2563eb" : cardBorder}`, borderRadius: "8px", fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", transition: "all 0.15s", fontWeight: doctor === d.addr ? 700 : 500 }}>
+                    👨‍⚕️ Dr. {d.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <input value={doctor} onChange={e => { setDoctor(e.target.value); setDoctorError(""); }}
             placeholder="Doctor wallet address (0x…)"
             style={{ width: "100%", border: `1px solid ${doctorError ? "#f87171" : inputBorder}`, background: inputBg, color: textPrimary, borderRadius: "8px", padding: "0.5rem 0.75rem", marginBottom: doctorError ? "0.25rem" : "0.75rem" }} />
@@ -516,6 +549,7 @@ function PatientDashboard({ account, darkMode }) {
           {[
             { id: "records", label: `📋 Records (${uploadedCids.length})` },
             { id: "meds", label: "💊 Medications" },
+            { id: "messages", label: "💬 Messages" },
             { id: "analytics", label: "📊 Analytics" },
             { id: "activity", label: `🕑 Activity (${activityLog.length})` },
             { id: "audit", label: "⛓ Audit Log" },
@@ -587,6 +621,51 @@ function PatientDashboard({ account, darkMode }) {
           <div className="card" style={{ background: cardBg, border: `1px solid ${cardBorder}` }}>
             <h3 className="card-header" style={{ color: textPrimary }}>💊 Medication Tracker</h3>
             <MedicationTracker account={account} darkMode={darkMode} />
+          </div>
+        )}
+
+        {/* ── Tab: Messages ───────────────────────────────────── */}
+        {activeTab === "messages" && (
+          <div className="card" style={{ background: cardBg, border: `1px solid ${cardBorder}` }}>
+            <h3 className="card-header" style={{ color: textPrimary }}>💬 Messages</h3>
+            {grantedDoctors.length === 0 ? (
+              <p style={{ color: textMuted, textAlign: "center", padding: "2rem" }}>You haven't granted access to any doctors yet. Grant access first to start messaging.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <div>
+                  <label style={{ fontSize: "0.85rem", color: textMuted, fontWeight: 700, marginBottom: "0.5rem", display: "block" }}>Select a Doctor to Chat With:</label>
+                  <select 
+                    value={selectedDoctorForChat} 
+                    onChange={e => setSelectedDoctorForChat(e.target.value)}
+                    style={{ width: "100%", maxWidth: "400px", padding: "0.75rem", borderRadius: "8px", border: `1px solid ${inputBorder}`, background: inputBg, color: textPrimary }}
+                  >
+                    <option value="" disabled>-- Select Doctor --</option>
+                    {grantedDoctors.map(addr => {
+                      let dName = "";
+                      for (let i = 0; i < localStorage.length; i++) {
+                         if (localStorage.key(i).toLowerCase() === `doctorname_${addr}`.toLowerCase()) dName = localStorage.getItem(localStorage.key(i));
+                      }
+                      return <option key={addr} value={addr}>{dName ? `Dr. ${dName}` : addr}</option>;
+                    })}
+                  </select>
+                </div>
+                {selectedDoctorForChat && (() => {
+                  let chatDocName = "";
+                  for (let i = 0; i < localStorage.length; i++) {
+                      if (localStorage.key(i).toLowerCase() === `doctorname_${selectedDoctorForChat}`.toLowerCase()) chatDocName = localStorage.getItem(localStorage.key(i));
+                  }
+                  return (
+                    <Messaging 
+                      currentUserAddress={account}
+                      otherUserAddress={selectedDoctorForChat}
+                      otherUserName={chatDocName}
+                      role="patient"
+                      darkMode={darkMode}
+                    />
+                  );
+                })()}
+              </div>
+            )}
           </div>
         )}
 
@@ -704,8 +783,11 @@ function PatientDashboard({ account, darkMode }) {
             ) : (
               <ul className="space-y-2">
                 {grantedDoctors.map(addr => {
-                  const dName = localStorage.getItem(`doctorName_${addr}`);
-                  const dHospital = localStorage.getItem(`hospitalName_${addr}`);
+                  let dName = ""; let dHospital = "";
+                  for (let i = 0; i < localStorage.length; i++) {
+                     if (localStorage.key(i).toLowerCase() === `doctorname_${addr}`.toLowerCase()) dName = localStorage.getItem(localStorage.key(i));
+                     if (localStorage.key(i).toLowerCase() === `hospitalname_${addr}`.toLowerCase()) dHospital = localStorage.getItem(localStorage.key(i));
+                  }
                   return (
                     <li key={addr} style={{ background: dm ? "#0f172a" : "#fff", borderRadius: "12px", padding: "0.75rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap", border: `1px solid ${cardBorder}` }}>
                       <div>

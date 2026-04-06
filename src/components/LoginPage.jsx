@@ -1,7 +1,7 @@
 import React from "react";
 import logo from "../assets/medchain-logo.svg";
 
-function LoginPage({ connectWallet, connectWalletConnect, connectPrivy, darkMode }) {
+function LoginPage({ connectWallet, connectPrivy, darkMode }) {
   const hasMetaMask = typeof window.ethereum !== "undefined";
   const dm = darkMode;
 
@@ -307,6 +307,12 @@ function LoginPage({ connectWallet, connectWalletConnect, connectPrivy, darkMode
             🔐 Secured by Ethereum · Sepolia Testnet<br />
             Your keys. Your data. Your control.
           </p>
+          <button 
+            onClick={() => { if(window.confirm("Are you sure you want to delete all profiles, chats, and mock data from this browser?")) { localStorage.clear(); window.location.reload(); } }}
+            style={{ marginTop: "1.5rem", background: "transparent", border: "none", color: dm ? "#ef4444" : "#ef4444", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", opacity: 0.7 }}
+          >
+            🧹 Reset Local Test Data
+          </button>
         </div>
       </div>
     </div>

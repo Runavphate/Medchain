@@ -21,10 +21,8 @@ const TYPE_COLORS = {
 const EMPTY_FORM = {
   type: NOTE_TYPES[0],
   date: new Date().toISOString().split("T")[0],
-  chiefComplaint: "",
-  findings: "",
+  message: "",
   prescription: "",
-  followUp: "",
   nextAppointment: "",
 };
 
@@ -54,7 +52,7 @@ function DoctorNotes({ account, patientAddress, patientName, darkMode }) {
   };
 
   const handleSubmit = () => {
-    if (!form.chiefComplaint.trim() && !form.findings.trim() && !form.prescription.trim()) return;
+    if (!form.message.trim() && !form.prescription.trim()) return;
     const updated =
       editingId !== null
         ? notes.map((n) => (n.id === editingId ? { ...form, id: editingId } : n))
@@ -83,7 +81,7 @@ function DoctorNotes({ account, patientAddress, patientName, darkMode }) {
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Prescription — Dr. ${doctorName}</title>
+  <title>Clinical Note — Dr. ${doctorName}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', Arial, sans-serif; padding: 2.5rem; max-width: 720px; margin: auto; color: #1e293b; }
@@ -127,15 +125,13 @@ function DoctorNotes({ account, patientAddress, patientName, darkMode }) {
     <div><label>Wallet</label><p style="font-family:monospace;font-size:0.78rem">${patientAddress ? patientAddress.slice(0, 12) + "…" + patientAddress.slice(-6) : "—"}</p></div>
   </div>
 
-  ${note.chiefComplaint ? `<div class="section"><label>Chief Complaint</label><p>${note.chiefComplaint}</p></div>` : ""}
-  ${note.findings ? `<div class="section"><label>Clinical Findings / Diagnosis</label><p>${note.findings}</p></div>` : ""}
+  ${note.message ? `<div class="section"><label>Note Message</label><p>${note.message}</p></div>` : ""}
   ${note.prescription ? `<div class="rx-box"><label>💊 Rx — Prescription / Treatment</label><p style="margin-top:0.5rem">${note.prescription}</p></div>` : ""}
-  ${note.followUp ? `<div class="section"><label>Follow-up Instructions</label><p>${note.followUp}</p></div>` : ""}
   ${note.nextAppointment ? `<div class="section"><label>Next Appointment</label><p>${note.nextAppointment}</p></div>` : ""}
 
   <div class="footer">
     <div class="disclaimer">
-      <p>This prescription was generated digitally via MedChain, a blockchain-secured medical record system. Verify with the issuing doctor before dispensing.</p>
+      <p>This document was generated digitally via MedChain, a blockchain-secured medical record system. Verify with the issuing doctor before dispensing.</p>
     </div>
     <div class="sig">
       <div class="line"></div>
@@ -276,28 +272,17 @@ function DoctorNotes({ account, patientAddress, patientName, darkMode }) {
                 style={inputStyle}
               />
             </div>
-            {/* Chief Complaint */}
+            
+            {/* Note Message */}
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={{ fontSize: "0.75rem", color: textMuted, fontWeight: 700 }}>
-                Chief Complaint
-              </label>
-              <input
-                value={form.chiefComplaint}
-                onChange={(e) => setForm((f) => ({ ...f, chiefComplaint: e.target.value }))}
-                placeholder="Patient's main complaint or reason for visit…"
-                style={inputStyle}
-              />
-            </div>
-            {/* Findings */}
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label style={{ fontSize: "0.75rem", color: textMuted, fontWeight: 700 }}>
-                Clinical Findings / Diagnosis
+                Note Message
               </label>
               <textarea
-                value={form.findings}
-                onChange={(e) => setForm((f) => ({ ...f, findings: e.target.value }))}
-                placeholder="Physical examination, test results, diagnosis…"
-                rows={3}
+                value={form.message}
+                onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
+                placeholder="Findings, instructions, or general notes..."
+                rows={4}
                 style={{ ...inputStyle, resize: "vertical" }}
               />
             </div>
@@ -314,18 +299,7 @@ function DoctorNotes({ account, patientAddress, patientName, darkMode }) {
                 style={{ ...inputStyle, resize: "vertical", borderColor: dm ? "#3730a3" : "#a5b4fc" }}
               />
             </div>
-            {/* Follow-up */}
-            <div>
-              <label style={{ fontSize: "0.75rem", color: textMuted, fontWeight: 700 }}>
-                Follow-up Instructions
-              </label>
-              <input
-                value={form.followUp}
-                onChange={(e) => setForm((f) => ({ ...f, followUp: e.target.value }))}
-                placeholder="e.g. Rest, diet advice, avoid…"
-                style={inputStyle}
-              />
-            </div>
+            
             {/* Next Appointment */}
             <div>
               <label style={{ fontSize: "0.75rem", color: textMuted, fontWeight: 700 }}>
@@ -493,23 +467,13 @@ function DoctorNotes({ account, patientAddress, patientName, darkMode }) {
               </div>
 
               {/* Note body */}
-              {note.chiefComplaint && (
+              {note.message && (
                 <div style={{ marginBottom: "0.65rem" }}>
                   <p style={{ fontSize: "0.68rem", color: textMuted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    Chief Complaint
+                    Note Message
                   </p>
-                  <p style={{ fontSize: "0.875rem", color: textPrimary, marginTop: "0.2rem" }}>
-                    {note.chiefComplaint}
-                  </p>
-                </div>
-              )}
-              {note.findings && (
-                <div style={{ marginBottom: "0.65rem" }}>
-                  <p style={{ fontSize: "0.68rem", color: textMuted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    Findings / Diagnosis
-                  </p>
-                  <p style={{ fontSize: "0.875rem", color: textPrimary, marginTop: "0.2rem" }}>
-                    {note.findings}
+                  <p style={{ fontSize: "0.875rem", color: textPrimary, marginTop: "0.2rem", whiteSpace: "pre-wrap" }}>
+                    {note.message}
                   </p>
                 </div>
               )}
@@ -530,11 +494,6 @@ function DoctorNotes({ account, patientAddress, patientName, darkMode }) {
                     {note.prescription}
                   </p>
                 </div>
-              )}
-              {note.followUp && (
-                <p style={{ fontSize: "0.78rem", color: textMuted, marginTop: "0.3rem" }}>
-                  📋 <em>{note.followUp}</em>
-                </p>
               )}
             </div>
           );

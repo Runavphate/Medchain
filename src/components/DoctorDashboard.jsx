@@ -4,6 +4,7 @@ import { decryptAndViewFile } from "../utils/ipfs";
 import LoadingOverlay from "./LoadingOverlay";
 import { ToastContainer, useToast } from "./Toast";
 import DoctorNotes from "./DoctorNotes";
+import Messaging from "./Messaging";
 
 const CATEGORY_COLORS = {
   "Lab Report": { bg: "#dbeafe", color: "#1d4ed8" },
@@ -97,6 +98,7 @@ function DoctorDashboard({ account, darkMode }) {
   const [activityLog, setActivityLog] = useState([]);
   const [auditLog, setAuditLog] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
+  const [registeredPatients, setRegisteredPatients] = useState([]);
 
   const { toasts, removeToast, toast } = useToast();
 
@@ -116,6 +118,17 @@ function DoctorDashboard({ account, darkMode }) {
     const savedVerified = localStorage.getItem(`doctorVerified_${account}`);
     if (savedVerified === "true") setVerified(true);
     setActivityLog(getLocalLog(account));
+
+    const patients = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("patientName_")) {
+            const addr = key.split("_")[1];
+            const name = localStorage.getItem(key);
+            if (name) patients.push({ addr, name });
+        }
+    }
+    setRegisteredPatients(patients);
   }, [account]);
 
   const handleSaveDoctorName = () => {
@@ -295,12 +308,27 @@ function DoctorDashboard({ account, darkMode }) {
         {/* Patient Access Card */}
         <div className="card mb-8" style={{ background: cardBg, border: `1px solid ${cardBorder}` }}>
           <h3 className="card-header" style={{ color: textPrimary }}>🧾 Patient Record Access</h3>
+          
+          {registeredPatients.length > 0 && (
+            <div style={{ marginBottom: "1rem" }}>
+              <p style={{ fontSize: "0.8rem", color: textMuted, fontWeight: 700, marginBottom: "0.5rem", textTransform: "uppercase" }}>Registered Patients</p>
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", maxHeight: "120px", overflowY: "auto", padding: "0.75rem", background: dm ? "#0f172a" : "#f8fafc", borderRadius: "10px", border: `1px solid ${cardBorder}` }}>
+                {registeredPatients.map(p => (
+                  <button key={p.addr} onClick={() => handlePatientAddressChange(p.addr)}
+                    style={{ padding: "0.45rem 1rem", background: patient === p.addr ? "linear-gradient(135deg, #3b82f6, #2563eb)" : (dm ? "#1e293b" : "#fff"), color: patient === p.addr ? "#fff" : textPrimary, border: `1px solid ${patient === p.addr ? "#2563eb" : cardBorder}`, borderRadius: "8px", fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", transition: "all 0.15s", fontWeight: patient === p.addr ? 700 : 500 }}>
+                    👤 {p.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <input value={patient} onChange={e => handlePatientAddressChange(e.target.value)}
-            placeholder="Patient wallet address (0x…)"
-            style={{ width: "100%", border: `1px solid ${patientError ? "#f87171" : inputBorder}`, background: inputBg, color: textPrimary, borderRadius: "8px", padding: "0.5rem 0.75rem", marginBottom: patientError ? "0.25rem" : "0" }} />
+            placeholder="Or enter wallet address manually (0x…)"
+            style={{ width: "100%", border: `1px solid ${patientError ? "#f87171" : inputBorder}`, background: inputBg, color: textPrimary, borderRadius: "8px", padding: "0.75rem", marginBottom: patientError ? "0.25rem" : "0" }} />
           {patientError && <p style={{ color: "#ef4444", fontSize: "0.75rem", marginTop: "0.25rem" }}>{patientError}</p>}
           {patientName && !patientError && (
-            <span style={{ display: "inline-block", marginTop: "0.5rem", fontSize: "0.82rem", color: "#0369a1", background: "#e0f2fe", borderRadius: "8px", padding: "0.3rem 0.75rem" }}>👤 {patientName}</span>
+            <span style={{ display: "inline-block", marginTop: "0.75rem", fontSize: "0.82rem", color: dm ? "#e0f2fe" : "#0369a1", background: dm ? "rgba(2, 132, 199, 0.4)" : "#e0f2fe", borderRadius: "8px", padding: "0.3rem 0.75rem", fontWeight: 600 }}>👤 Selected: {patientName}</span>
           )}
           <div className="flex gap-3 flex-wrap mt-4">
             <button onClick={handleRequestAccess} disabled={!patient.trim() || requestSent} className="btn-secondary" style={{ opacity: !patient.trim() || requestSent ? 0.5 : 1 }} id="request-access-btn">
@@ -318,6 +346,7 @@ function DoctorDashboard({ account, darkMode }) {
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
             {records.length > 0 && <button style={tabStyle("records")} onClick={() => setActiveTab("records")}>📂 Records ({records.length})</button>}
             {patient.trim() && isValidAddress(patient) && <button style={tabStyle("notes")} onClick={() => setActiveTab("notes")}>📝 Notes</button>}
+            {patient.trim() && isValidAddress(patient) && <button style={tabStyle("messages")} onClick={() => setActiveTab("messages")}>💬 Messages</button>}
             <button style={tabStyle("activity")} onClick={() => setActiveTab("activity")}>🕑 Activity ({activityLog.length})</button>
             <button style={tabStyle("audit")} onClick={() => setActiveTab("audit")}>⛓ Audit Log</button>
           </div>
@@ -383,6 +412,20 @@ function DoctorDashboard({ account, darkMode }) {
               account={account}
               patientAddress={patient.trim()}
               patientName={patientName}
+              darkMode={darkMode}
+            />
+          </div>
+        )}
+
+        {/* Messages Tab */}
+        {activeTab === "messages" && (
+          <div className="card" style={{ background: cardBg, border: `1px solid ${cardBorder}` }}>
+            <h3 className="card-header" style={{ color: textPrimary }}>💬 Messages</h3>
+            <Messaging
+              currentUserAddress={account}
+              otherUserAddress={patient.trim()}
+              otherUserName={patientName}
+              role="doctor"
               darkMode={darkMode}
             />
           </div>
