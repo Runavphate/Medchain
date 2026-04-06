@@ -3,41 +3,11 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { PrivyProvider } from '@privy-io/react-auth';
-const sepolia = {
-  id: 11155111,
-  name: 'Sepolia',
-  network: 'sepolia',
-  nativeCurrency: { name: 'Sepolia Ether', symbol: 'SEP', decimals: 18 },
-  rpcUrls: {
-    default: { http: ['https://rpc.sepolia.org'] },
-    public: { http: ['https://rpc.sepolia.org'] },
-  },
-  blockExplorers: {
-    default: { name: 'Etherscan', url: 'https://sepolia.etherscan.io' },
-  },
-  testnet: true,
-};
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <PrivyProvider
-      appId="cmnh3xh8800d60cjolzfngexr"
-      config={{
-        loginMethods: ['email', 'wallet', 'google', 'github'],
-        walletConnectCloudProjectId: "e6f8510a21ab31295db28399eab4a8dd", // Enables the WalletConnect QR code
-        appearance: {
-          theme: 'dark',
-          accentColor: '#6366f1',
-          showWalletLoginFirst: false,
-        },
-        defaultChain: sepolia,
-        supportedChains: [sepolia],
-      }}
-    >
-      <App />
-    </PrivyProvider>
+    <App />
   </React.StrictMode>
 );
 

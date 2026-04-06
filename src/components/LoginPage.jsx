@@ -1,7 +1,7 @@
 import React from "react";
 import logo from "../assets/medchain-logo.svg";
 
-function LoginPage({ connectWallet, connectPrivy, darkMode }) {
+function LoginPage({ connectWallet, connectWeb3Modal, darkMode }) {
   const hasMetaMask = typeof window.ethereum !== "undefined";
   const dm = darkMode;
 
@@ -254,23 +254,15 @@ function LoginPage({ connectWallet, connectPrivy, darkMode }) {
             </>
           )}
 
-          {/* Privy Login Button — Secondary Option */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: "1rem", margin: "1.5rem 0 1rem",
-          }}>
-            <div style={{ flex: 1, height: "1px", background: dm ? "#334155" : "#e2e8f0", opacity: 0.5 }} />
-            <span style={{ color: dm ? "#64748b" : "#94a3b8", fontSize: "0.75rem", whiteSpace: "nowrap" }}>or use digital identity</span>
-            <div style={{ flex: 1, height: "1px", background: dm ? "#334155" : "#e2e8f0", opacity: 0.5 }} />
-          </div>
-
+          {/* QR Code Login Button (Web3Modal) */}
           <button
-            onClick={connectPrivy}
+            onClick={connectWeb3Modal}
             style={{
               width: "100%",
               padding: "0.8rem 1.5rem",
-              background: dm ? "rgba(99, 102, 241, 0.1)" : "#f1f5f9",
-              color: dm ? "#a5b4fc" : "#4f46e5",
-              border: `1px solid ${dm ? "rgba(99, 102, 241, 0.3)" : "#e2e8f0"}`,
+              background: dm ? "rgba(59, 130, 246, 0.1)" : "#eff6ff",
+              color: dm ? "#93c5fd" : "#2563eb",
+              border: `1px solid ${dm ? "rgba(59, 130, 246, 0.3)" : "#bfdbfe"}`,
               borderRadius: "14px",
               fontSize: "0.95rem",
               fontWeight: 600,
@@ -280,29 +272,24 @@ function LoginPage({ connectWallet, connectPrivy, darkMode }) {
               justifyContent: "center",
               gap: "0.75rem",
               transition: "all 0.2s ease",
+              marginTop: "0.75rem",
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.background = dm ? "rgba(99, 102, 241, 0.2)" : "#e2e8f0";
-              e.currentTarget.style.borderColor = "#6366f1";
+              e.currentTarget.style.background = dm ? "rgba(59, 130, 246, 0.2)" : "#dbeafe";
+              e.currentTarget.style.borderColor = "#3b82f6";
               e.currentTarget.style.transform = "translateY(-1px)";
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.background = dm ? "rgba(99, 102, 241, 0.1)" : "#f1f5f9";
-              e.currentTarget.style.borderColor = dm ? "rgba(99, 102, 241, 0.3)" : "#e2e8f0";
+              e.currentTarget.style.background = dm ? "rgba(59, 130, 246, 0.1)" : "#eff6ff";
+              e.currentTarget.style.borderColor = dm ? "rgba(59, 130, 246, 0.3)" : "#bfdbfe";
               e.currentTarget.style.transform = "translateY(0)";
             }}
           >
-            <span style={{ fontSize: "1.2rem" }}>🛡️</span>
-            Login with Email/Wallets
+            <span style={{ fontSize: "1.2rem" }}>📱</span>
+            Email or Other Wallets
           </button>
 
 
-          {/* Footer note */}
-          {!hasMetaMask && (
-            <p style={{ color: dm ? "#fcd34d" : "#f97316", fontSize: "0.75rem", marginTop: "0.5rem", lineHeight: 1.5, background: dm ? "#451a03" : "#fff7ed", padding: "0.4rem 0.75rem", borderRadius: "8px" }}>
-              💡 No extension? Use <strong style={{ color: dm ? "#fbbf24" : "#ea580c" }}>Login with Email/Wallets</strong> to connect from your phone or desktop.
-            </p>
-          )}
           <p style={{ color: dm ? "#64748b" : "#94a3b8", fontSize: "0.78rem", marginTop: "0.75rem", lineHeight: 1.5 }}>
             🔐 Secured by Ethereum · Sepolia Testnet<br />
             Your keys. Your data. Your control.

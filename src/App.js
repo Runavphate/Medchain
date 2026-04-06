@@ -4,44 +4,75 @@ import DoctorDashboard from "./components/DoctorDashboard";
 import LoginPage from "./components/LoginPage";
 import NotificationBell from "./components/NotificationBell";
 
+import { createWeb3Modal, defaultConfig } from '@web3modal/ethers';
 import { setGlobalProvider } from "./utils/contract";
 import logo from "./assets/medchain-logo.svg";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
 
 const SEPOLIA_CHAIN_ID = "0xaa36a7";
+
+// 1. Web3Modal Configuration
+const projectId = '1c72c1484a9d982f01b4ce42b1312fa0';
+
+const sepolia = {
+  chainId: 11155111,
+  name: 'Sepolia',
+  currency: 'ETH',
+  explorerUrl: 'https://sepolia.etherscan.io',
+  rpcUrl: 'https://rpc.sepolia.org'
+};
+
+const metadata = {
+  name: 'MedChain',
+  description: 'MedChain Decentralized Medical Records',
+  url: 'http://localhost:3000', 
+  icons: ['https://avatars.mywebsite.com/']
+};
+
+const ethersConfig = defaultConfig({
+  metadata,
+  enableEIP6963: true,
+  enableInjected: true,
+  enableCoinbase: true,
+});
+
+const web3modal = createWeb3Modal({
+  ethersConfig,
+  chains: [sepolia],
+  projectId,
+  enableAnalytics: true,
+  themeMode: 'dark'
+});
 
 function App() {
   const [account, setAccount] = useState("");
   const [role, setRole] = useState("");
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("darkMode") === "true");
 
-  const { login, logout, authenticated } = usePrivy();
-  const { wallets } = useWallets();
-
-  // Privy Wallet Sync
+  // Sync Web3Modal WalletConnect Wallet using Vanilla JS directly
   useEffect(() => {
-    const syncPrivyWallet = async () => {
-      if (authenticated && wallets.length > 0) {
-        const embeddedWallet = wallets[0]; // Primary Privy wallet
-        setAccount(embeddedWallet.address);
+    // Initial State Check
+    if (web3modal.getIsConnected() && web3modal.getWalletProvider()) {
+      setAccount(web3modal.getAddress());
+      setGlobalProvider(web3modal.getWalletProvider());
+    }
 
-        // Force switch to Sepolia if not already on it
-        const sepoliaChainId = 'eip155:11155111';
-        if (embeddedWallet.chainId !== sepoliaChainId) {
-          try {
-            await embeddedWallet.switchChain(11155111);
-          } catch (error) {
-            console.error("Failed to switch Privy wallet to Sepolia:", error);
-            alert("Please switch your wallet to the Sepolia Testnet inside your app!");
-          }
-        }
-
-        const provider = await embeddedWallet.getEthereumProvider();
-        setGlobalProvider(provider);
+    // Subscribe to state changes dynamically
+    const unsubscribe = web3modal.subscribeProvider((state) => {
+      if (state.isConnected && state.provider && state.address) {
+        setAccount(state.address);
+        setGlobalProvider(state.provider);
+      } else {
+        // Handled globally if required
       }
-    };
-    syncPrivyWallet();
-  }, [authenticated, wallets]);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+
+
+
+
 
   // Apply / remove 'dark' class on <html> for Tailwind
   useEffect(() => {
@@ -82,11 +113,11 @@ function App() {
 
 
 
-  const handleDisconnect = () => { 
+  const handleDisconnect = async () => { 
     setAccount(""); 
     setRole(""); 
     setGlobalProvider(null); 
-    if (authenticated) logout();
+    try { if (web3modal.getIsConnected()) await web3modal.disconnect(); } catch (e) { console.error("Disconnect Error", e) }
   };
 
   React.useEffect(() => {
@@ -168,7 +199,7 @@ function App() {
       </nav>
 
       <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "6rem 2rem 3rem" }}>
-        {!account && <LoginPage connectWallet={connectWallet} connectPrivy={login} darkMode={darkMode} />}
+        {!account && <LoginPage connectWallet={connectWallet} connectWeb3Modal={() => web3modal.open()} darkMode={darkMode} />}
 
         {account && !role && (
           <div style={{ minHeight: "calc(100vh - 120px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem" }}>
