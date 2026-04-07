@@ -126,7 +126,7 @@ function LoginPage({ connectWallet, connectWeb3Modal, darkMode }) {
       <div
         style={{
           flex: "1 1 50%",
-          background: "#f8fafc",
+          background: dm ? "#0f172a" : "#f8fafc",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",

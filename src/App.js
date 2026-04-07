@@ -91,25 +91,33 @@ function App() {
       return;
     }
 
-    await window.ethereum.request({
-      method: "wallet_requestPermissions",
-      params: [{ eth_accounts: {} }],
-    });
+    try {
+      // Always prompt account chooser so user can switch accounts
+      await window.ethereum.request({
+        method: "wallet_requestPermissions",
+        params: [{ eth_accounts: {} }],
+      });
 
-    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-    const chainId = await window.ethereum.request({ method: "eth_chainId" });
+      let accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+      let chainId = await window.ethereum.request({ method: "eth_chainId" });
 
-    if (chainId !== SEPOLIA_CHAIN_ID) {
-      try {
-        await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: SEPOLIA_CHAIN_ID }] });
-      } catch {
-        alert("Please switch to Sepolia Testnet");
-        return;
+      if (chainId !== SEPOLIA_CHAIN_ID) {
+        try {
+          await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: SEPOLIA_CHAIN_ID }] });
+          // Re-fetch accounts after the chain switch — provider may reassign them
+          accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        } catch {
+          alert("Please switch to the Sepolia Testnet in MetaMask and try again.");
+          return;
+        }
       }
-    }
 
-    setAccount(accounts[0]);
-    setGlobalProvider(window.ethereum);
+      setAccount(accounts[0]);
+      setGlobalProvider(window.ethereum);
+    } catch (err) {
+      // User rejected the connection — do nothing silently
+      console.warn("MetaMask connection rejected:", err?.message);
+    }
   };
 
 
@@ -124,10 +132,27 @@ function App() {
   React.useEffect(() => {
     if (!window.ethereum) return;
     const handleAccountsChanged = (accounts) => {
-      if (accounts && accounts.length > 0) setAccount(accounts[0]);
-      else setAccount("");
+      if (accounts && accounts.length > 0) {
+        setAccount(accounts[0]);
+        setRole(""); // Reset role — new account may be a different patient/doctor
+      } else {
+        setAccount("");
+        setRole("");
+      }
     };
-    const handleChainChanged = () => setAccount("");
+    const handleChainChanged = (chainId) => {
+      // If user switches away from Sepolia, warn and log out gracefully
+      if (chainId !== SEPOLIA_CHAIN_ID) {
+        alert("You switched away from the Sepolia network. Please switch back to continue.");
+        setAccount("");
+        setRole("");
+        setGlobalProvider(null);
+      }
+      // If they switch TO Sepolia (e.g. from wrong chain), reload to re-init cleanly
+      else {
+        window.location.reload();
+      }
+    };
     window.ethereum.on("accountsChanged", handleAccountsChanged);
     window.ethereum.on("chainChanged", handleChainChanged);
     return () => {
