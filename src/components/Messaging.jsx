@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ref, push, onValue, off, serverTimestamp } from "firebase/database";
+import { ref, push, onValue, off } from "firebase/database";
 import { db } from "../utils/firebase";
 
 function Messaging({ currentUserAddress, otherUserAddress, otherUserName, role, darkMode }) {
@@ -17,7 +17,7 @@ function Messaging({ currentUserAddress, otherUserAddress, otherUserName, role, 
 
     const messagesRef = ref(db, `chats/${chatId}/messages`);
 
-    const unsubscribe = onValue(
+    onValue(
       messagesRef,
       (snapshot) => {
         setConnected(true);
