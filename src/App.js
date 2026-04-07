@@ -8,7 +8,6 @@ import { createWeb3Modal, defaultConfig } from '@web3modal/ethers';
 import { setGlobalProvider } from "./utils/contract";
 import logo from "./assets/medchain-logo.svg";
 
-const SEPOLIA_CHAIN_ID = "0xaa36a7";
 
 // 1. Web3Modal Configuration
 const projectId = '1c72c1484a9d982f01b4ce42b1312fa0';
@@ -85,81 +84,15 @@ function App() {
     localStorage.setItem("darkMode", darkMode);
   }, [darkMode]);
 
-  const connectWallet = async () => {
-    if (!window.ethereum) {
-      alert("Please install MetaMask");
-      return;
-    }
 
-    try {
-      // Always prompt account chooser so user can switch accounts
-      await window.ethereum.request({
-        method: "wallet_requestPermissions",
-        params: [{ eth_accounts: {} }],
-      });
-
-      let accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-      let chainId = await window.ethereum.request({ method: "eth_chainId" });
-
-      if (chainId !== SEPOLIA_CHAIN_ID) {
-        try {
-          await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: SEPOLIA_CHAIN_ID }] });
-          // Re-fetch accounts after the chain switch — provider may reassign them
-          accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-        } catch {
-          alert("Please switch to the Sepolia Testnet in MetaMask and try again.");
-          return;
-        }
-      }
-
-      setAccount(accounts[0]);
-      setGlobalProvider(window.ethereum);
-    } catch (err) {
-      // User rejected the connection — do nothing silently
-      console.warn("MetaMask connection rejected:", err?.message);
-    }
+  const handleDisconnect = async () => {
+    setAccount("");
+    setRole("");
+    setGlobalProvider(null);
+    try { if (web3modal.getIsConnected()) await web3modal.disconnect(); } catch (e) { console.error("Disconnect Error", e); }
   };
 
 
-
-  const handleDisconnect = async () => { 
-    setAccount(""); 
-    setRole(""); 
-    setGlobalProvider(null); 
-    try { if (web3modal.getIsConnected()) await web3modal.disconnect(); } catch (e) { console.error("Disconnect Error", e) }
-  };
-
-  React.useEffect(() => {
-    if (!window.ethereum) return;
-    const handleAccountsChanged = (accounts) => {
-      if (accounts && accounts.length > 0) {
-        setAccount(accounts[0]);
-        setRole(""); // Reset role — new account may be a different patient/doctor
-      } else {
-        setAccount("");
-        setRole("");
-      }
-    };
-    const handleChainChanged = (chainId) => {
-      // If user switches away from Sepolia, warn and log out gracefully
-      if (chainId !== SEPOLIA_CHAIN_ID) {
-        alert("You switched away from the Sepolia network. Please switch back to continue.");
-        setAccount("");
-        setRole("");
-        setGlobalProvider(null);
-      }
-      // If they switch TO Sepolia (e.g. from wrong chain), reload to re-init cleanly
-      else {
-        window.location.reload();
-      }
-    };
-    window.ethereum.on("accountsChanged", handleAccountsChanged);
-    window.ethereum.on("chainChanged", handleChainChanged);
-    return () => {
-      window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
-      window.ethereum.removeListener("chainChanged", handleChainChanged);
-    };
-  }, []);
 
   const dm = darkMode;
   const navBg = dm ? "rgba(15,23,42,0.92)" : "rgba(255,255,255,0.88)";
@@ -225,7 +158,7 @@ function App() {
       </nav>
 
       <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "6rem 2rem 3rem" }}>
-        {!account && <LoginPage connectWallet={connectWallet} connectWeb3Modal={() => web3modal.open()} darkMode={darkMode} />}
+        {!account && <LoginPage connectWeb3Modal={() => web3modal.open()} darkMode={darkMode} />}
 
         {account && !role && (
           <div style={{ minHeight: "calc(100vh - 120px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem" }}>

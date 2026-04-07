@@ -1,8 +1,7 @@
 import React from "react";
 import logo from "../assets/medchain-logo.svg";
 
-function LoginPage({ connectWallet, connectWeb3Modal, darkMode }) {
-  const hasMetaMask = typeof window.ethereum !== "undefined";
+function LoginPage({ connectWeb3Modal, darkMode }) {
   const dm = darkMode;
 
   return (
@@ -155,148 +154,55 @@ function LoginPage({ connectWallet, connectWeb3Modal, darkMode }) {
           }}>
             Welcome to MedChain
           </h1>
-          <p style={{ color: dm ? "#94a3b8" : "#64748b", fontSize: "0.95rem", marginBottom: "1.5rem", lineHeight: 1.5 }}>
+          <p style={{ color: dm ? "#94a3b8" : "#64748b", fontSize: "0.95rem", marginBottom: "2rem", lineHeight: 1.5 }}>
             Connect your wallet to securely access your medical records on the blockchain.
           </p>
 
-          {/* Divider */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem",
-          }}>
-            <div style={{ flex: 1, height: "1px", background: dm ? "#334155" : "#e2e8f0" }} />
-            <span style={{ color: dm ? "#94a3b8" : "#94a3b8", fontSize: "0.8rem", whiteSpace: "nowrap" }}>Sign in with</span>
-            <div style={{ flex: 1, height: "1px", background: dm ? "#334155" : "#e2e8f0" }} />
-          </div>
-
-          {/* MetaMask — connect or install */}
-          {hasMetaMask ? (
-            <button
-              onClick={connectWallet}
-              style={{
-                width: "100%",
-                padding: "1rem 1.5rem",
-                background: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)",
-                color: "#fff",
-                border: "none",
-                borderRadius: "14px",
-                fontSize: "1rem",
-                fontWeight: 700,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.75rem",
-                boxShadow: "0 4px 20px rgba(99,102,241,0.4)",
-                transition: "transform 0.15s ease, box-shadow 0.15s ease",
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 8px 28px rgba(99,102,241,0.5)";
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 20px rgba(99,102,241,0.4)";
-              }}
-            >
-              <span style={{ fontSize: "1.4rem" }}>🦊</span>
-              Connect MetaMask
-            </button>
-          ) : (
-            <>
-              {/* No MetaMask detected — show install prompt */}
-              <div style={{
-                background: dm ? "#451a03" : "linear-gradient(135deg, #fff7ed, #ffedd5)",
-                border: `1.5px solid ${dm ? "#78350f" : "#fb923c"}`,
-                borderRadius: "14px",
-                padding: "1rem 1.25rem",
-                marginBottom: "0.25rem",
-                textAlign: "left",
-              }}>
-                <p style={{ fontWeight: 700, color: dm ? "#fcd34d" : "#9a3412", fontSize: "0.9rem", marginBottom: "0.3rem" }}>
-                  🦊 MetaMask not detected
-                </p>
-                <p style={{ color: dm ? "#fde68a" : "#7c2d12", fontSize: "0.8rem", marginBottom: "0.75rem", lineHeight: 1.5 }}>
-                  Install the MetaMask browser extension to connect your wallet on desktop.
-                </p>
-                <a
-                  href="https://metamask.io/download/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "0.6rem",
-                    width: "100%",
-                    padding: "0.75rem 1.25rem",
-                    background: "linear-gradient(135deg, #f97316, #ea580c)",
-                    color: "#fff",
-                    borderRadius: "10px",
-                    fontWeight: 700,
-                    fontSize: "0.95rem",
-                    textDecoration: "none",
-                    boxShadow: "0 4px 16px rgba(249,115,22,0.35)",
-                    transition: "transform 0.15s ease, box-shadow 0.15s ease",
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 8px 24px rgba(249,115,22,0.45)";
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 4px 16px rgba(249,115,22,0.35)";
-                  }}
-                >
-                  <span style={{ fontSize: "1.2rem" }}>🦊</span>
-                  Install MetaMask Extension
-                </a>
-              </div>
-            </>
-          )}
-
-          {/* QR Code Login Button (Web3Modal) */}
+          {/* Single WalletConnect Button */}
           <button
             onClick={connectWeb3Modal}
             style={{
               width: "100%",
-              padding: "0.8rem 1.5rem",
-              background: dm ? "rgba(59, 130, 246, 0.1)" : "#eff6ff",
-              color: dm ? "#93c5fd" : "#2563eb",
-              border: `1px solid ${dm ? "rgba(59, 130, 246, 0.3)" : "#bfdbfe"}`,
+              padding: "1rem 1.5rem",
+              background: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)",
+              color: "#fff",
+              border: "none",
               borderRadius: "14px",
-              fontSize: "0.95rem",
-              fontWeight: 600,
+              fontSize: "1rem",
+              fontWeight: 700,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: "0.75rem",
-              transition: "all 0.2s ease",
-              marginTop: "0.75rem",
+              boxShadow: "0 4px 20px rgba(99,102,241,0.4)",
+              transition: "transform 0.15s ease, box-shadow 0.15s ease",
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.background = dm ? "rgba(59, 130, 246, 0.2)" : "#dbeafe";
-              e.currentTarget.style.borderColor = "#3b82f6";
-              e.currentTarget.style.transform = "translateY(-1px)";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 8px 28px rgba(99,102,241,0.55)";
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.background = dm ? "rgba(59, 130, 246, 0.1)" : "#eff6ff";
-              e.currentTarget.style.borderColor = dm ? "rgba(59, 130, 246, 0.3)" : "#bfdbfe";
               e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "0 4px 20px rgba(99,102,241,0.4)";
             }}
           >
-            <span style={{ fontSize: "1.2rem" }}>📱</span>
-            Email or Other Wallets
+            <span style={{ fontSize: "1.4rem" }}>🔗</span>
+            Connect Wallet
           </button>
 
+          <p style={{ color: dm ? "#475569" : "#94a3b8", fontSize: "0.75rem", marginTop: "1.25rem", lineHeight: 1.6 }}>
+            Supports MetaMask, WalletConnect, Coinbase Wallet &amp; more
+          </p>
 
-          <p style={{ color: dm ? "#64748b" : "#94a3b8", fontSize: "0.78rem", marginTop: "0.75rem", lineHeight: 1.5 }}>
+          <p style={{ color: dm ? "#64748b" : "#94a3b8", fontSize: "0.78rem", marginTop: "0.5rem", lineHeight: 1.5 }}>
             🔐 Secured by Ethereum · Sepolia Testnet<br />
             Your keys. Your data. Your control.
           </p>
-          <button 
-            onClick={() => { if(window.confirm("Are you sure you want to delete all profiles, chats, and mock data from this browser?")) { localStorage.clear(); window.location.reload(); } }}
-            style={{ marginTop: "1.5rem", background: "transparent", border: "none", color: dm ? "#ef4444" : "#ef4444", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", opacity: 0.7 }}
+
+          <button
+            onClick={() => { if (window.confirm("Are you sure you want to delete all profiles, chats, and mock data from this browser?")) { localStorage.clear(); window.location.reload(); } }}
+            style={{ marginTop: "1.5rem", background: "transparent", border: "none", color: "#ef4444", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", opacity: 0.7 }}
           >
             🧹 Reset Local Test Data
           </button>
