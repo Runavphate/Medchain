@@ -661,8 +661,8 @@ function PatientDashboard({ account, darkMode }) {
                   }
                   return (
                     <Messaging 
-                      currentUserAddress={account}
-                      otherUserAddress={selectedDoctorForChat}
+                      currentUserAddress={account.toLowerCase()}
+                      otherUserAddress={selectedDoctorForChat.toLowerCase()}
                       otherUserName={chatDocName}
                       role="patient"
                       darkMode={darkMode}

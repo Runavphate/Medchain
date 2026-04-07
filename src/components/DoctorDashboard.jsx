@@ -423,8 +423,8 @@ function DoctorDashboard({ account, darkMode }) {
           <div className="card" style={{ background: cardBg, border: `1px solid ${cardBorder}` }}>
             <h3 className="card-header" style={{ color: textPrimary }}>💬 Messages</h3>
             <Messaging
-              currentUserAddress={account}
-              otherUserAddress={patient.trim()}
+              currentUserAddress={account.toLowerCase()}
+              otherUserAddress={patient.trim().toLowerCase()}
               otherUserName={patientName}
               role="doctor"
               darkMode={darkMode}

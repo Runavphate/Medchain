@@ -81,7 +81,7 @@ function Messaging({ currentUserAddress, otherUserAddress, otherUserName, role, 
           </div>
         ) : (
           messages.map((m) => {
-            const isMe = m.sender === currentUserAddress;
+            const isMe = m.sender.toLowerCase() === currentUserAddress.toLowerCase();
             return (
               <div key={m.id} style={{ alignSelf: isMe ? "flex-end" : "flex-start", maxWidth: "75%" }}>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start" }}>
