@@ -6,7 +6,8 @@ function Messaging({ currentUserAddress, otherUserAddress, otherUserName, role, 
   const endRef = useRef(null);
 
   // Storage key sorted to be identical for both parties
-  const storageKey = `chat_${[currentUserAddress, otherUserAddress].sort().join("_")}`;
+  // Normalize to lowercase so checksum-cased addresses always map to the same key
+  const storageKey = `chat_${[currentUserAddress.toLowerCase(), otherUserAddress.toLowerCase()].sort().join("_")}`;
 
   useEffect(() => {
     if (!currentUserAddress || !otherUserAddress) return;
@@ -60,8 +61,8 @@ function Messaging({ currentUserAddress, otherUserAddress, otherUserName, role, 
     <div style={{ display: "flex", flexDirection: "column", height: "500px", border: `1px solid ${border}`, borderRadius: "16px", background: dm ? "#1e293b" : "#fff", overflow: "hidden" }}>
       {/* Header */}
       <div style={{ padding: "1rem 1.25rem", borderBottom: `1px solid ${border}`, background: dm ? "#0f172a" : "#f1f5f9", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-        <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: role === "doctor" ? "linear-gradient(135deg, #fce7f3, #f472b6)" : "linear-gradient(135deg, #e0e7ff, #818cf8)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem" }}>
-          {role === "doctor" ? "🧑" : "👨‍⚕️"}
+        <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: role === "patient" ? "linear-gradient(135deg, #fce7f3, #f472b6)" : "linear-gradient(135deg, #e0e7ff, #818cf8)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem" }}>
+          {role === "patient" ? "👨‍⚕️" : "🧑"}
         </div>
         <div>
           <h4 style={{ margin: 0, color: textPrimary, fontSize: "0.95rem", fontWeight: 700 }}>

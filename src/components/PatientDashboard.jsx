@@ -145,7 +145,7 @@ function PatientDashboard({ account, darkMode }) {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem(`patientName_${account}`);
+    const saved = localStorage.getItem(`patientName_${account.toLowerCase()}`);
     if (saved) setPatientName(saved);
     const savedDoctors = localStorage.getItem(`grantedDoctors_${account}`);
     if (savedDoctors) { try { setGrantedDoctors(JSON.parse(savedDoctors)); } catch { } }
@@ -157,7 +157,8 @@ function PatientDashboard({ account, darkMode }) {
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.toLowerCase().startsWith("doctorname_")) {
-            const addr = key.split("_")[1];
+            // Key is saved as 'doctorName_<addr>' — extract address after first underscore
+            const addr = key.substring(key.indexOf("_") + 1);
             const name = localStorage.getItem(key);
             if (name) allDocs.push({ addr, name });
         }
@@ -183,7 +184,7 @@ function PatientDashboard({ account, darkMode }) {
 
   const handleSaveName = () => {
     if (!nameInput.trim()) return;
-    localStorage.setItem(`patientName_${account}`, nameInput.trim());
+    localStorage.setItem(`patientName_${account.toLowerCase()}`, nameInput.trim());
     setPatientName(nameInput.trim());
     setNameInput("");
   };
@@ -213,7 +214,10 @@ function PatientDashboard({ account, darkMode }) {
       flashSuccess();
       toast.success("Access revoked");
       log("🚫", `Revoked access from ${doctorAddress.slice(0, 8)}…`);
-      saveGrantedDoctors(grantedDoctors.filter(a => a !== doctorAddress));
+      const next = grantedDoctors.filter(a => a !== doctorAddress);
+      saveGrantedDoctors(next);
+      // Clear stale chat selection if that doctor was revoked
+      if (selectedDoctorForChat === doctorAddress) setSelectedDoctorForChat("");
     } catch {
       flashFailure();
       toast.error("Failed to revoke access");
@@ -230,6 +234,7 @@ function PatientDashboard({ account, darkMode }) {
       toast.success(`Removed access for ${grantedDoctors.length} doctor(s)`);
       log("🚫", `Revoked all access (${grantedDoctors.length} doctors)`);
       saveGrantedDoctors([]);
+      setSelectedDoctorForChat(""); // Clear stale chat selection
     } catch {
       flashFailure();
       toast.error("Failed to revoke all access");

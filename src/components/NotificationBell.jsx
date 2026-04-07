@@ -4,9 +4,10 @@ import { getPendingRequests } from "../utils/contract";
 function NotificationBell({ account, role, darkMode }) {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [prevCount, setPrevCount] = useState(0);
   const [shaking, setShaking] = useState(false);
   const ref = useRef(null);
+  // useRef so the interval callback always sees the latest count (avoids stale closure)
+  const prevCountRef = useRef(0);
 
   // Poll for pending access requests when role is patient
   useEffect(() => {
@@ -19,7 +20,7 @@ function NotificationBell({ account, role, darkMode }) {
       try {
         const addrs = await getPendingRequests();
         if (!addrs) return; // Guard against undefined
-        
+
         setNotifications(
           addrs.map((addr) => {
             const dName = localStorage.getItem(`doctorName_${addr}`);
@@ -27,15 +28,12 @@ function NotificationBell({ account, role, darkMode }) {
             return { id: addr, addr, dName, dHospital };
           })
         );
-        // Shake bell if new requests arrived
-        setShaking((prev) => {
-          if (addrs.length > prevCount && addrs.length > 0) {
-            setTimeout(() => setShaking(false), 800);
-            return true;
-          }
-          return prev;
-        });
-        setPrevCount(addrs.length);
+        // Shake bell if new requests arrived since last poll
+        if (addrs.length > prevCountRef.current && addrs.length > 0) {
+          setShaking(true);
+          setTimeout(() => setShaking(false), 800);
+        }
+        prevCountRef.current = addrs.length;
       } catch (err) {
         console.warn("Polling error (likely skipped due to session sync):", err.message);
       }
@@ -44,7 +42,7 @@ function NotificationBell({ account, role, darkMode }) {
     poll();
     const interval = setInterval(poll, 8000);
     return () => clearInterval(interval);
-  }, [account, role]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [account, role]);
 
   // Close dropdown on outside click
   useEffect(() => {

@@ -166,7 +166,7 @@ function MedCard({ med, onEdit, onDelete, onStatusToggle, dm, cardBg, cardBorder
 
 // ── Main component ──────────────────────────────────────────────────────────
 function MedicationTracker({ account, darkMode }) {
-  const storageKey = `medications_${account}`;
+  const storageKey = `medications_${account.toLowerCase()}`;
   const [medications, setMedications] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);

@@ -27,7 +27,8 @@ const EMPTY_FORM = {
 };
 
 function DoctorNotes({ account, patientAddress, patientName, darkMode }) {
-  const storageKey = `doctorNotes_${account}_${patientAddress}`;
+  // Normalise addresses so keys are consistent regardless of EIP-55 checksum casing
+  const storageKey = `doctorNotes_${account.toLowerCase()}_${patientAddress.toLowerCase()}`;
   const [notes, setNotes] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -71,9 +72,11 @@ function DoctorNotes({ account, patientAddress, patientName, darkMode }) {
   const handleDelete = (id) => persist(notes.filter((n) => n.id !== id));
 
   const handlePrint = (note) => {
-    const doctorName = localStorage.getItem(`doctorName_${account}`) || account.slice(0, 8) + "…";
+    const doctorName = localStorage.getItem(`doctorName_${account}`) || account.slice(0, 8) + "\u2026";
     const hospitalName = localStorage.getItem(`hospitalName_${account}`) || "Medical Center";
     const tc = TYPE_COLORS[note.type] || TYPE_COLORS["General Consultation"];
+    // Escape user content to prevent broken HTML or XSS in the print window
+    const esc = (s = "") => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 
     const win = window.open("", "_blank");
     if (!win) return;
@@ -125,9 +128,9 @@ function DoctorNotes({ account, patientAddress, patientName, darkMode }) {
     <div><label>Wallet</label><p style="font-family:monospace;font-size:0.78rem">${patientAddress ? patientAddress.slice(0, 12) + "…" + patientAddress.slice(-6) : "—"}</p></div>
   </div>
 
-  ${note.message ? `<div class="section"><label>Note Message</label><p>${note.message}</p></div>` : ""}
-  ${note.prescription ? `<div class="rx-box"><label>💊 Rx — Prescription / Treatment</label><p style="margin-top:0.5rem">${note.prescription}</p></div>` : ""}
-  ${note.nextAppointment ? `<div class="section"><label>Next Appointment</label><p>${note.nextAppointment}</p></div>` : ""}
+  ${note.message ? `<div class="section"><label>Note Message</label><p>${esc(note.message)}</p></div>` : ""}
+  ${note.prescription ? `<div class="rx-box"><label>\ud83d\udc8a Rx \u2014 Prescription / Treatment</label><p style="margin-top:0.5rem">${esc(note.prescription)}</p></div>` : ""}
+  ${note.nextAppointment ? `<div class="section"><label>Next Appointment</label><p>${esc(note.nextAppointment)}</p></div>` : ""}
 
   <div class="footer">
     <div class="disclaimer">

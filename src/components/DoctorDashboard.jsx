@@ -123,7 +123,8 @@ function DoctorDashboard({ account, darkMode }) {
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith("patientName_")) {
-            const addr = key.split("_")[1];
+            // Extract address after first underscore to handle the full address cleanly
+            const addr = key.substring(key.indexOf("_") + 1);
             const name = localStorage.getItem(key);
             if (name) patients.push({ addr, name });
         }
@@ -152,7 +153,7 @@ function DoctorDashboard({ account, darkMode }) {
 
   const handlePatientAddressChange = (addr) => {
     setPatient(addr); setPatientError(""); setRequestSent(false);
-    const saved = localStorage.getItem(`patientName_${addr.trim()}`);
+    const saved = localStorage.getItem(`patientName_${addr.trim().toLowerCase()}`);
     setPatientName(saved || "");
   };
 
