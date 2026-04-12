@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { getDoctorNotes, setDoctorNotes as saveNotesToDb, getUserProfile } from "../utils/db";
 
 const NOTE_TYPES = [
   "General Consultation",
@@ -27,8 +28,6 @@ const EMPTY_FORM = {
 };
 
 function DoctorNotes({ account, patientAddress, patientName, darkMode }) {
-  // Normalise addresses so keys are consistent regardless of EIP-55 checksum casing
-  const storageKey = `doctorNotes_${account.toLowerCase()}_${patientAddress.toLowerCase()}`;
   const [notes, setNotes] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -36,14 +35,11 @@ function DoctorNotes({ account, patientAddress, patientName, darkMode }) {
 
   useEffect(() => {
     if (!patientAddress) return;
-    try {
-      const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      setNotes(saved);
-    } catch {}
-  }, [storageKey, patientAddress]);
+    getDoctorNotes(account, patientAddress).then((saved) => setNotes(saved));
+  }, [account, patientAddress]);
 
   const persist = (list) => {
-    localStorage.setItem(storageKey, JSON.stringify(list));
+    saveNotesToDb(account, patientAddress, list);
     setNotes(list);
   };
 
@@ -71,9 +67,10 @@ function DoctorNotes({ account, patientAddress, patientName, darkMode }) {
 
   const handleDelete = (id) => persist(notes.filter((n) => n.id !== id));
 
-  const handlePrint = (note) => {
-    const doctorName = localStorage.getItem(`doctorName_${account}`) || account.slice(0, 8) + "\u2026";
-    const hospitalName = localStorage.getItem(`hospitalName_${account}`) || "Medical Center";
+  const handlePrint = async (note) => {
+    const profile = await getUserProfile(account);
+    const doctorName = profile.name || account.slice(0, 8) + "\u2026";
+    const hospitalName = profile.hospital || "Medical Center";
     const tc = TYPE_COLORS[note.type] || TYPE_COLORS["General Consultation"];
     // Escape user content to prevent broken HTML or XSS in the print window
     const esc = (s = "") => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");

@@ -11,6 +11,13 @@ import ConfirmDialog from "./ConfirmDialog";
 import { ToastContainer, useToast } from "./Toast";
 import MedicationTracker from "./MedicationTracker";
 import Messaging from "./Messaging";
+import {
+  getUserProfile, patchUserProfile,
+  getGrantedDoctors, setGrantedDoctors as saveGrantedDoctors,
+  getRecordMeta, setRecordMeta,
+  getActivityLog, addActivityLogEntry,
+  listUsersByRole,
+} from "../utils/db";
 
 const CATEGORIES = ["Lab Report", "Prescription", "X-Ray", "Discharge Summary", "Other"];
 const CATEGORY_COLORS = {
@@ -72,20 +79,8 @@ const getViewerMode = (mimeType = "", fileName = "") => {
   return "download";
 };
 
-// ── Activity log helpers ──────────────────────────────────────────────
-const logKey = (account) => `activityLog_${account}`;
+// ── Activity log helpers ────────────────────────────────────────────────────
 
-const addLocalLog = (account, entry) => {
-  try {
-    const existing = JSON.parse(localStorage.getItem(logKey(account)) || "[]");
-    const updated = [{ ...entry, ts: new Date().toISOString() }, ...existing].slice(0, 50);
-    localStorage.setItem(logKey(account), JSON.stringify(updated));
-  } catch { }
-};
-
-const getLocalLog = (account) => {
-  try { return JSON.parse(localStorage.getItem(logKey(account)) || "[]"); } catch { return []; }
-};
 
 function PatientDashboard({ account, darkMode }) {
   // Core state
@@ -131,10 +126,9 @@ function PatientDashboard({ account, darkMode }) {
   const flashSuccess = () => { setShowSuccess(true); setTimeout(() => setShowSuccess(false), 1500); };
   const flashFailure = () => { setShowFailure(true); setTimeout(() => setShowFailure(false), 1500); };
 
-  const log = useCallback((icon, msg) => {
-    const entry = { icon, msg };
-    addLocalLog(account, entry);
-    setActivityLog(getLocalLog(account));
+  const log = useCallback(async (icon, msg) => {
+    const updated = await addActivityLogEntry(account, { icon, msg });
+    setActivityLog(updated);
   }, [account]);
 
   const loadRequests = useCallback(async () => {
@@ -144,48 +138,47 @@ function PatientDashboard({ account, darkMode }) {
     } catch { }
   }, []);
 
+  // ── Load all data from Firebase on mount ─────────────────────────────────
   useEffect(() => {
-    const saved = localStorage.getItem(`patientName_${account.toLowerCase()}`);
-    if (saved) setPatientName(saved);
-    const savedDoctors = localStorage.getItem(`grantedDoctors_${account}`);
-    if (savedDoctors) { try { setGrantedDoctors(JSON.parse(savedDoctors)); } catch { } }
-    setActivityLog(getLocalLog(account));
+    // Patient profile
+    getUserProfile(account).then((profile) => {
+      if (profile.name) setPatientName(profile.name);
+    });
+    // Granted doctors
+    getGrantedDoctors(account).then((list) => {
+      if (list && list.length) setGrantedDoctors(list);
+    });
+    // Activity log
+    getActivityLog(account).then(setActivityLog);
+    // Pending blockchain requests
     loadRequests();
     const interval = setInterval(loadRequests, 5000);
-
-    const allDocs = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.toLowerCase().startsWith("doctorname_")) {
-            // Key is saved as 'doctorName_<addr>' — extract address after first underscore
-            const addr = key.substring(key.indexOf("_") + 1);
-            const name = localStorage.getItem(key);
-            if (name) allDocs.push({ addr, name });
-        }
-    }
-    setRegisteredDoctors(allDocs);
+    // Registered doctors list from Firebase
+    listUsersByRole("doctor").then(setRegisteredDoctors);
 
     return () => clearInterval(interval);
   }, [account, loadRequests]);
 
-  const saveGrantedDoctors = (list) => {
-    localStorage.setItem(`grantedDoctors_${account}`, JSON.stringify(list));
+  const _saveGrantedDoctors = (list) => {
+    saveGrantedDoctors(account, list);
     setGrantedDoctors(list);
   };
 
-  const addGrantedDoctor = (addr) => {
+  const addGrantedDoctor = (a) => {
     setGrantedDoctors(prev => {
-      if (prev.includes(addr)) return prev;
-      const next = [...prev, addr];
-      localStorage.setItem(`grantedDoctors_${account}`, JSON.stringify(next));
+      if (prev.includes(a)) return prev;
+      const next = [...prev, a];
+      saveGrantedDoctors(account, next);
       return next;
     });
   };
 
-  const handleSaveName = () => {
+  const handleSaveName = async () => {
     if (!nameInput.trim()) return;
-    localStorage.setItem(`patientName_${account.toLowerCase()}`, nameInput.trim());
-    setPatientName(nameInput.trim());
+    const name = nameInput.trim();
+    await patchUserProfile(account, "name", name);
+    await patchUserProfile(account, "role", "patient");
+    setPatientName(name);
     setNameInput("");
   };
 
@@ -215,8 +208,7 @@ function PatientDashboard({ account, darkMode }) {
       toast.success("Access revoked");
       log("🚫", `Revoked access from ${doctorAddress.slice(0, 8)}…`);
       const next = grantedDoctors.filter(a => a !== doctorAddress);
-      saveGrantedDoctors(next);
-      // Clear stale chat selection if that doctor was revoked
+      _saveGrantedDoctors(next);
       if (selectedDoctorForChat === doctorAddress) setSelectedDoctorForChat("");
     } catch {
       flashFailure();
@@ -229,12 +221,12 @@ function PatientDashboard({ account, darkMode }) {
     try {
       setLoading(true);
       setStatus("Revoking all access...");
-      for (const addr of grantedDoctors) await revokeAccess(addr);
+      for (const a of grantedDoctors) await revokeAccess(a);
       flashSuccess();
       toast.success(`Removed access for ${grantedDoctors.length} doctor(s)`);
       log("🚫", `Revoked all access (${grantedDoctors.length} doctors)`);
-      saveGrantedDoctors([]);
-      setSelectedDoctorForChat(""); // Clear stale chat selection
+      _saveGrantedDoctors([]);
+      setSelectedDoctorForChat("");
     } catch {
       flashFailure();
       toast.error("Failed to revoke all access");
@@ -274,7 +266,7 @@ function PatientDashboard({ account, darkMode }) {
       await addRecord(cid);
       const guessedType = file.type && file.type !== "" ? file.type : guessMimeFromFileName(file.name);
       const meta = { fileName: file.name, fileType: guessedType, uploadDate: new Date().toLocaleDateString("en-IN"), category };
-      localStorage.setItem(`recordMeta_${cid}`, JSON.stringify(meta));
+      await setRecordMeta(cid, meta);
       setUploadedCids(prev => [...prev, cid]);
       flashSuccess();
       toast.success(`"${file.name}" uploaded successfully`);
@@ -307,7 +299,7 @@ function PatientDashboard({ account, darkMode }) {
 
   const handleViewFile = async (cid) => {
     let meta = null;
-    try { meta = JSON.parse(localStorage.getItem(`recordMeta_${cid}`)); } catch { }
+    try { meta = await getRecordMeta(cid); } catch { }
     try {
       setLoading(true); setStatus("Decrypting…");
       const fileData = await decryptAndViewFile(cid);
@@ -373,18 +365,22 @@ function PatientDashboard({ account, darkMode }) {
     setViewingCid(null); setViewerMeta(null);
   };
 
-  // Analytics data
+  // Analytics data — load metas async
+  const [allMetas, setAllMetas] = useState({});
+  useEffect(() => {
+    if (!uploadedCids.length) return;
+    Promise.all(uploadedCids.map(cid => getRecordMeta(cid).then(m => [cid, m])))
+      .then(pairs => setAllMetas(Object.fromEntries(pairs)));
+  }, [uploadedCids]);
+
   const analyticsData = CATEGORIES.map(cat => {
-    const count = uploadedCids.filter(cid => {
-      try { return JSON.parse(localStorage.getItem(`recordMeta_${cid}`))?.category === cat; } catch { return false; }
-    }).length;
+    const count = uploadedCids.filter(cid => allMetas[cid]?.category === cat).length;
     return { name: cat, value: count, color: CATEGORY_COLORS[cat].chart };
   }).filter(d => d.value > 0);
 
   // Filtered records
   const filteredCids = uploadedCids.filter(cid => {
-    let meta = null;
-    try { meta = JSON.parse(localStorage.getItem(`recordMeta_${cid}`)); } catch { }
+    const meta = allMetas[cid];
     const matchText = !filterText || (meta?.fileName || "").toLowerCase().includes(filterText.toLowerCase());
     const matchCat = filterCategory === "All" || meta?.category === filterCategory;
     return matchText && matchCat;
@@ -451,7 +447,7 @@ function PatientDashboard({ account, darkMode }) {
         {patientName && (
           <p className="text-sm mb-4" style={{ color: textMuted }}>
             <span className="mr-3">👤 {patientName}</span>
-            <button onClick={() => { localStorage.removeItem(`patientName_${account}`); setPatientName(""); setNameInput(""); }}
+            <button onClick={async () => { await patchUserProfile(account, "name", ""); setPatientName(""); setNameInput(""); }}
               className="text-xs text-red-400 hover:text-red-600 underline">Edit</button>
           </p>
         )}
@@ -459,14 +455,12 @@ function PatientDashboard({ account, darkMode }) {
         {/* Access Request Notifications */}
         {accessRequests.length > 0 && (
           <div className="mb-6">
-            {accessRequests.map(addr => {
-              let dName = ""; let dHospital = "";
-              for (let i = 0; i < localStorage.length; i++) {
-                 if (localStorage.key(i).toLowerCase() === `doctorname_${addr}`.toLowerCase()) dName = localStorage.getItem(localStorage.key(i));
-                 if (localStorage.key(i).toLowerCase() === `hospitalname_${addr}`.toLowerCase()) dHospital = localStorage.getItem(localStorage.key(i));
-              }
+            {accessRequests.map(reqAddr => {
+              const docProfile = registeredDoctors.find(d => d.addr === reqAddr.toLowerCase()) || {};
+              const dName = docProfile.name || "";
+              const dHospital = docProfile.hospital || "";
               return (
-                <div key={addr} style={{
+                <div key={reqAddr} style={{
                   background: "linear-gradient(135deg, #fffbeb, #fef3c7)", border: "1.5px solid #fbbf24",
                   borderRadius: "14px", padding: "1rem 1.25rem", marginBottom: "0.75rem",
                   display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap",
@@ -475,12 +469,12 @@ function PatientDashboard({ account, darkMode }) {
                   <div>
                     <p style={{ fontWeight: 700, color: "#92400e", fontSize: "0.95rem" }}>🔔 New Access Request</p>
                     <p style={{ color: "#78350f", fontSize: "0.85rem", marginTop: "0.2rem" }}>
-                      {dName ? <><strong>Dr. {dName}</strong>{dHospital && <> from <strong>{dHospital}</strong></>}</> : <strong>{addr.slice(0, 10)}…{addr.slice(-6)}</strong>} wants to view your records.
+                      {dName ? <><strong>Dr. {dName}</strong>{dHospital && <> from <strong>{dHospital}</strong></>}</> : <strong>{reqAddr.slice(0, 10)}…{reqAddr.slice(-6)}</strong>} wants to view your records.
                     </p>
                   </div>
                   <div style={{ display: "flex", gap: "0.6rem" }}>
-                    <button onClick={() => handleApproveRequest(addr)} style={{ padding: "0.5rem 1.1rem", background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff", border: "none", borderRadius: "10px", fontWeight: 700, cursor: "pointer" }}>✓ Approve</button>
-                    <button onClick={() => handleDenyRequest(addr)} style={{ padding: "0.5rem 1.1rem", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff", border: "none", borderRadius: "10px", fontWeight: 700, cursor: "pointer" }}>✕ Deny</button>
+                    <button onClick={() => handleApproveRequest(reqAddr)} style={{ padding: "0.5rem 1.1rem", background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff", border: "none", borderRadius: "10px", fontWeight: 700, cursor: "pointer" }}>✓ Approve</button>
+                    <button onClick={() => handleDenyRequest(reqAddr)} style={{ padding: "0.5rem 1.1rem", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff", border: "none", borderRadius: "10px", fontWeight: 700, cursor: "pointer" }}>✕ Deny</button>
                   </div>
                 </div>
               );
@@ -589,7 +583,7 @@ function PatientDashboard({ account, darkMode }) {
               <ul className="space-y-2">
                 {filteredCids.map((cid, i) => {
                   let meta = null;
-                  try { meta = JSON.parse(localStorage.getItem(`recordMeta_${cid}`)); } catch { }
+                  try { meta = allMetas[cid] || null; } catch { }
                   const catStyle = meta ? (CATEGORY_COLORS[meta.category] || CATEGORY_COLORS["Other"]) : CATEGORY_COLORS["Other"];
                   return (
                     <li key={i} style={{ background: cardBg, borderRadius: "12px", padding: "0.75rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", border: `1px solid ${cardBorder}` }}>
@@ -634,45 +628,102 @@ function PatientDashboard({ account, darkMode }) {
           <div className="card" style={{ background: cardBg, border: `1px solid ${cardBorder}` }}>
             <h3 className="card-header" style={{ color: textPrimary }}>💬 Messages</h3>
             {grantedDoctors.length === 0 ? (
-              <p style={{ color: textMuted, textAlign: "center", padding: "2rem" }}>You haven't granted access to any doctors yet. Grant access first to start messaging.</p>
+              <div style={{ textAlign: "center", padding: "3rem 2rem" }}>
+                <p style={{ fontSize: "2.5rem" }}>🔐</p>
+                <p style={{ color: textPrimary, fontWeight: 700, marginTop: "0.75rem" }}>No doctors yet</p>
+                <p style={{ color: textMuted, fontSize: "0.85rem", marginTop: "0.3rem" }}>Grant a doctor access first to start messaging.</p>
+              </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+                {/* Doctor picker cards */}
                 <div>
-                  <label style={{ fontSize: "0.85rem", color: textMuted, fontWeight: 700, marginBottom: "0.5rem", display: "block" }}>Select a Doctor to Chat With:</label>
-                  <select 
-                    value={selectedDoctorForChat} 
-                    onChange={e => setSelectedDoctorForChat(e.target.value)}
-                    style={{ width: "100%", maxWidth: "400px", padding: "0.75rem", borderRadius: "8px", border: `1px solid ${inputBorder}`, background: inputBg, color: textPrimary }}
-                  >
-                    <option value="" disabled>-- Select Doctor --</option>
-                    {grantedDoctors.map(addr => {
-                      let dName = "";
-                      for (let i = 0; i < localStorage.length; i++) {
-                         if (localStorage.key(i).toLowerCase() === `doctorname_${addr}`.toLowerCase()) dName = localStorage.getItem(localStorage.key(i));
-                      }
-                      return <option key={addr} value={addr}>{dName ? `Dr. ${dName}` : addr}</option>;
+                  <p style={{ fontSize: "0.75rem", color: textMuted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.75rem" }}>
+                    Select a doctor to chat with
+                  </p>
+                  <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                    {grantedDoctors.map(docAddr => {
+                      const docProfile = registeredDoctors.find(d => d.addr === docAddr.toLowerCase()) || {};
+                      const dName = docProfile.name || "";
+                      const dHospital = docProfile.hospital || "";
+                      const isSelected = selectedDoctorForChat === docAddr;
+                      // Generate a consistent avatar color from the address
+                      const hue = parseInt(docAddr.slice(2, 4), 16) % 360;
+                      return (
+                        <button
+                          key={docAddr}
+                          onClick={() => setSelectedDoctorForChat(isSelected ? "" : docAddr)}
+                          style={{
+                            display: "flex", alignItems: "center", gap: "0.75rem",
+                            padding: "0.75rem 1.1rem",
+                            background: isSelected
+                              ? "linear-gradient(135deg, #6366f1, #4f46e5)"
+                              : (dm ? "#0f172a" : "#f8fafc"),
+                            border: `2px solid ${isSelected ? "#6366f1" : (dm ? "#334155" : "#e2e8f0")}`,
+                            borderRadius: "14px", cursor: "pointer",
+                            transition: "all 0.18s ease",
+                            boxShadow: isSelected ? "0 4px 20px rgba(99,102,241,0.35)" : "none",
+                            textAlign: "left",
+                          }}
+                          onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(99,102,241,0.18)"; } }}
+                          onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.borderColor = dm ? "#334155" : "#e2e8f0"; e.currentTarget.style.boxShadow = "none"; } }}
+                        >
+                          {/* Avatar */}
+                          <div style={{
+                            width: "42px", height: "42px", borderRadius: "50%", flexShrink: 0,
+                            background: isSelected ? "rgba(255,255,255,0.2)" : `hsl(${hue}, 60%, ${dm ? "30%" : "88%"})`,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: "1.2rem", border: isSelected ? "2px solid rgba(255,255,255,0.3)" : "none",
+                          }}>
+                            {dName ? dName[0].toUpperCase() : "👨‍⚕️"}
+                          </div>
+                          {/* Info */}
+                          <div>
+                            <p style={{ fontWeight: 700, fontSize: "0.9rem", color: isSelected ? "#fff" : textPrimary, lineHeight: 1.2 }}>
+                              {dName ? `Dr. ${dName}` : "Unknown Doctor"}
+                            </p>
+                            {dHospital && (
+                              <p style={{ fontSize: "0.73rem", color: isSelected ? "rgba(255,255,255,0.75)" : textMuted, marginTop: "0.1rem" }}>
+                                🏥 {dHospital}
+                              </p>
+                            )}
+                            <p style={{ fontSize: "0.65rem", color: isSelected ? "rgba(255,255,255,0.55)" : (dm ? "#475569" : "#cbd5e1"), marginTop: "0.1rem", fontFamily: "monospace" }}>
+                              {docAddr.slice(0, 8)}…{docAddr.slice(-6)}
+                            </p>
+                          </div>
+                          {/* Selected check */}
+                          {isSelected && (
+                            <span style={{ marginLeft: "auto", fontSize: "1.1rem" }}>✅</span>
+                          )}
+                        </button>
+                      );
                     })}
-                  </select>
+                  </div>
                 </div>
+
+                {/* Chat window */}
                 {selectedDoctorForChat && (() => {
-                  let chatDocName = "";
-                  for (let i = 0; i < localStorage.length; i++) {
-                      if (localStorage.key(i).toLowerCase() === `doctorname_${selectedDoctorForChat}`.toLowerCase()) chatDocName = localStorage.getItem(localStorage.key(i));
-                  }
+                  const chatDoc = registeredDoctors.find(d => d.addr === selectedDoctorForChat.toLowerCase()) || {};
+                  const chatDocName = chatDoc.name || "";
                   return (
-                    <Messaging 
-                      currentUserAddress={account.toLowerCase()}
-                      otherUserAddress={selectedDoctorForChat.toLowerCase()}
-                      otherUserName={chatDocName}
-                      role="patient"
-                      darkMode={darkMode}
-                    />
+                    <div style={{ borderTop: `1px solid ${cardBorder}`, paddingTop: "1.25rem" }}>
+                      <Messaging
+                        currentUserAddress={account.toLowerCase()}
+                        otherUserAddress={selectedDoctorForChat.toLowerCase()}
+                        otherUserName={chatDocName}
+                        role="patient"
+                        darkMode={darkMode}
+                      />
+                    </div>
                   );
                 })()}
+
               </div>
             )}
           </div>
         )}
+
+
 
         {/* ── Tab: Analytics ───────────────────────────────────── */}
         {activeTab === "analytics" && (
@@ -787,20 +838,18 @@ function PatientDashboard({ account, darkMode }) {
               <p style={{ color: textMuted, textAlign: "center", fontSize: "0.9rem", padding: "2rem" }}>No doctors granted access yet.</p>
             ) : (
               <ul className="space-y-2">
-                {grantedDoctors.map(addr => {
-                  let dName = ""; let dHospital = "";
-                  for (let i = 0; i < localStorage.length; i++) {
-                     if (localStorage.key(i).toLowerCase() === `doctorname_${addr}`.toLowerCase()) dName = localStorage.getItem(localStorage.key(i));
-                     if (localStorage.key(i).toLowerCase() === `hospitalname_${addr}`.toLowerCase()) dHospital = localStorage.getItem(localStorage.key(i));
-                  }
+                {grantedDoctors.map(docAddr => {
+                  const docProfile = registeredDoctors.find(d => d.addr === docAddr.toLowerCase()) || {};
+                  const dName = docProfile.name || "";
+                  const dHospital = docProfile.hospital || "";
                   return (
-                    <li key={addr} style={{ background: dm ? "#0f172a" : "#fff", borderRadius: "12px", padding: "0.75rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap", border: `1px solid ${cardBorder}` }}>
+                    <li key={docAddr} style={{ background: dm ? "#0f172a" : "#fff", borderRadius: "12px", padding: "0.75rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap", border: `1px solid ${cardBorder}` }}>
                       <div>
-                        <p style={{ fontWeight: 700, color: textPrimary, fontSize: "0.9rem" }}>{dName ? `👨‍⚕️ Dr. ${dName}` : `👨‍⚕️ ${addr.slice(0, 10)}…${addr.slice(-6)}`}</p>
+                        <p style={{ fontWeight: 700, color: textPrimary, fontSize: "0.9rem" }}>{dName ? `👨‍⚕️ Dr. ${dName}` : `👨‍⚕️ ${docAddr.slice(0, 10)}…${docAddr.slice(-6)}`}</p>
                         {dHospital && <p style={{ fontSize: "0.78rem", color: dm ? "#7dd3fc" : "#0369a1" }}>🏥 {dHospital}</p>}
-                        <p style={{ fontSize: "0.72rem", color: textMuted }}>{addr.slice(0, 10)}…{addr.slice(-6)}</p>
+                        <p style={{ fontSize: "0.72rem", color: textMuted }}>{docAddr.slice(0, 10)}…{docAddr.slice(-6)}</p>
                       </div>
-                      <button onClick={() => setConfirmRevoke(addr)}
+                      <button onClick={() => setConfirmRevoke(docAddr)}
                         style={{ padding: "0.45rem 1rem", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff", border: "none", borderRadius: "8px", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
                         🚫 Revoke
                       </button>

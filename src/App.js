@@ -3,6 +3,7 @@ import PatientDashboard from "./components/PatientDashboard";
 import DoctorDashboard from "./components/DoctorDashboard";
 import LoginPage from "./components/LoginPage";
 import NotificationBell from "./components/NotificationBell";
+import { getGrantedDoctors, listUsersByRole } from "./utils/db";
 
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers';
 import { setGlobalProvider } from "./utils/contract";
@@ -38,6 +39,7 @@ const ethersConfig = defaultConfig({
 const web3modal = createWeb3Modal({
   ethersConfig,
   chains: [sepolia],
+  defaultChain: sepolia, // Enforce Sepolia chain on connect
   projectId,
   enableAnalytics: true,
   themeMode: 'dark'
@@ -47,6 +49,10 @@ function App() {
   const [account, setAccount] = useState("");
   const [role, setRole] = useState("");
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("darkMode") === "true");
+  // Role chosen on login page before wallet connects
+  const [, setPendingRole] = useState("");
+  // For notification bell: who this user can receive messages from
+  const [bellPartners, setBellPartners] = useState([]);
 
   // Sync Web3Modal WalletConnect Wallet using Vanilla JS directly
   useEffect(() => {
@@ -61,6 +67,8 @@ function App() {
       if (state.isConnected && state.provider && state.address) {
         setAccount(state.address);
         setGlobalProvider(state.provider);
+        // If user pre-selected a role on the login page, apply it now
+        setPendingRole(prev => { if (prev) { setRole(prev); return ""; } return prev; });
       } else {
         // Handled globally if required
       }
@@ -83,6 +91,16 @@ function App() {
     }
     localStorage.setItem("darkMode", darkMode);
   }, [darkMode]);
+
+  // Load message partners for the notification bell
+  useEffect(() => {
+    if (!account || !role) { setBellPartners([]); return; }
+    if (role === "patient") {
+      getGrantedDoctors(account).then(list => setBellPartners(list || []));
+    } else if (role === "doctor") {
+      listUsersByRole("patient").then(users => setBellPartners(users.map(u => u.addr)));
+    }
+  }, [account, role]);
 
 
   const handleDisconnect = async () => {
@@ -135,7 +153,13 @@ function App() {
 
             {/* Notification Bell — visible once wallet is connected */}
             {account && (
-              <NotificationBell account={account} role={role} darkMode={darkMode} />
+              <NotificationBell
+                account={account}
+                role={role}
+                darkMode={darkMode}
+                grantedDoctors={role === "patient" ? bellPartners : []}
+                grantedPatients={role === "doctor" ? bellPartners : []}
+              />
             )}
 
             {account && (
@@ -158,7 +182,7 @@ function App() {
       </nav>
 
       <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "6rem 2rem 3rem" }}>
-        {!account && <LoginPage connectWeb3Modal={() => web3modal.open()} darkMode={darkMode} />}
+        {!account && <LoginPage connectWeb3Modal={() => web3modal.open()} darkMode={darkMode} onRoleSelect={r => setPendingRole(r)} />}
 
         {account && !role && (
           <div style={{ minHeight: "calc(100vh - 120px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem" }}>

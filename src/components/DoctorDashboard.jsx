@@ -5,6 +5,11 @@ import LoadingOverlay from "./LoadingOverlay";
 import { ToastContainer, useToast } from "./Toast";
 import DoctorNotes from "./DoctorNotes";
 import Messaging from "./Messaging";
+import {
+  getUserProfile, patchUserProfile,
+  getActivityLog, addActivityLogEntry,
+  listUsersByRole, getUserProfile as fetchProfile,
+} from "../utils/db";
 
 const CATEGORY_COLORS = {
   "Lab Report": { bg: "#dbeafe", color: "#1d4ed8" },
@@ -64,17 +69,7 @@ const getViewerMode = (mimeType = "", fileName = "") => {
   return "download";
 };
 
-const logKey = (account) => `doctorLog_${account}`;
-const addLocalLog = (account, entry) => {
-  try {
-    const existing = JSON.parse(localStorage.getItem(logKey(account)) || "[]");
-    const updated = [{ ...entry, ts: new Date().toISOString() }, ...existing].slice(0, 50);
-    localStorage.setItem(logKey(account), JSON.stringify(updated));
-  } catch { }
-};
-const getLocalLog = (account) => {
-  try { return JSON.parse(localStorage.getItem(logKey(account)) || "[]"); } catch { return []; }
-};
+
 
 function DoctorDashboard({ account, darkMode }) {
   const [patient, setPatient] = useState("");
@@ -105,56 +100,52 @@ function DoctorDashboard({ account, darkMode }) {
   const flashSuccess = () => { setShowSuccess(true); setTimeout(() => setShowSuccess(false), 1500); };
   const flashFailure = () => { setShowFailure(true); setTimeout(() => setShowFailure(false), 1500); };
 
-  const log = useCallback((icon, msg) => {
-    addLocalLog(account, { icon, msg });
-    setActivityLog(getLocalLog(account));
+  const log = useCallback(async (icon, msg) => {
+    const updated = await addActivityLogEntry(account, { icon, msg });
+    setActivityLog(updated);
   }, [account]);
 
   useEffect(() => {
-    const saved = localStorage.getItem(`doctorName_${account}`);
-    if (saved) setDoctorName(saved);
-    const savedHospital = localStorage.getItem(`hospitalName_${account}`);
-    if (savedHospital) setHospitalName(savedHospital);
-    const savedVerified = localStorage.getItem(`doctorVerified_${account}`);
-    if (savedVerified === "true") setVerified(true);
-    setActivityLog(getLocalLog(account));
-
-    const patients = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith("patientName_")) {
-            // Extract address after first underscore to handle the full address cleanly
-            const addr = key.substring(key.indexOf("_") + 1);
-            const name = localStorage.getItem(key);
-            if (name) patients.push({ addr, name });
-        }
-    }
-    setRegisteredPatients(patients);
+    // Load doctor profile from Firebase
+    getUserProfile(account).then((profile) => {
+      if (profile.name) setDoctorName(profile.name);
+      if (profile.hospital) setHospitalName(profile.hospital);
+      if (profile.verified === true) setVerified(true);
+    });
+    // Load activity log from Firebase
+    getActivityLog(account).then(setActivityLog);
+    // Load registered patients from Firebase
+    listUsersByRole("patient").then(setRegisteredPatients);
   }, [account]);
 
-  const handleSaveDoctorName = () => {
+  const handleSaveDoctorName = async () => {
     if (!doctorNameInput.trim()) return;
-    localStorage.setItem(`doctorName_${account}`, doctorNameInput.trim());
-    setDoctorName(doctorNameInput.trim()); setDoctorNameInput("");
+    const newName = doctorNameInput.trim();
+    await patchUserProfile(account, "name", newName);
+    await patchUserProfile(account, "role", "doctor");
+    setDoctorName(newName);
+    setDoctorNameInput("");
   };
 
-  const handleSaveHospital = () => {
+  const handleSaveHospital = async () => {
     if (!hospitalInput.trim()) return;
-    localStorage.setItem(`hospitalName_${account}`, hospitalInput.trim());
-    setHospitalName(hospitalInput.trim()); setHospitalInput("");
+    const newHospital = hospitalInput.trim();
+    await patchUserProfile(account, "hospital", newHospital);
+    setHospitalName(newHospital);
+    setHospitalInput("");
   };
 
-  const toggleVerified = () => {
+  const toggleVerified = async () => {
     const next = !verified;
     setVerified(next);
-    localStorage.setItem(`doctorVerified_${account}`, String(next));
+    await patchUserProfile(account, "verified", next);
     toast.info(next ? "Marked as verified ✅" : "Verification badge removed");
   };
 
-  const handlePatientAddressChange = (addr) => {
-    setPatient(addr); setPatientError(""); setRequestSent(false);
-    const saved = localStorage.getItem(`patientName_${addr.trim().toLowerCase()}`);
-    setPatientName(saved || "");
+  const handlePatientAddressChange = async (a) => {
+    setPatient(a); setPatientError(""); setRequestSent(false);
+    const profile = await fetchProfile(a.trim().toLowerCase());
+    setPatientName(profile?.name || "");
   };
 
   const handleRequestAccess = async () => {
@@ -181,9 +172,9 @@ function DoctorDashboard({ account, darkMode }) {
       setLoading(true); setStatus("Fetching records…");
       const cids = await getRecords(patient);
       setRecords(cids);
-      setRequestSent(false); // Clear waiting message if successful
-      const name = localStorage.getItem(`patientName_${patient}`) || "";
-      setPatientName(name);
+      setRequestSent(false);
+      const profile2 = await fetchProfile(patient.toLowerCase());
+      setPatientName(profile2?.name || "");
       flashSuccess();
       toast.success(`${cids.length} record(s) unlocked 🔓`);
       log("👁️", `Viewed records of ${patient.slice(0, 8)}…`);
@@ -301,7 +292,7 @@ function DoctorDashboard({ account, darkMode }) {
               style={{ padding: "0.3rem 0.8rem", borderRadius: "999px", border: `1.5px solid ${verified ? "#6ee7b7" : inputBorder}`, background: verified ? "#d1fae5" : (dm ? "#1e293b" : "#f8fafc"), color: verified ? "#065f46" : textMuted, fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}>
               {verified ? "✅ Verified" : "☑ Mark as Verified"}
             </button>
-            <button onClick={() => { localStorage.removeItem(`doctorName_${account}`); localStorage.removeItem(`hospitalName_${account}`); setDoctorName(""); setHospitalName(""); setDoctorNameInput(""); setHospitalInput(""); }}
+            <button onClick={() => { patchUserProfile(account, "name", ""); patchUserProfile(account, "hospital", ""); setDoctorName(""); setHospitalName(""); setDoctorNameInput(""); setHospitalInput(""); }}
               className="text-xs text-red-400 hover:text-red-600 underline">Edit</button>
           </div>
         )}

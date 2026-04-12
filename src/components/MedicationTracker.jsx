@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { getMedications, setMedications as saveMedicationsToDb } from "../utils/db";
 
 const FREQUENCIES = [
   "Once daily",
@@ -21,6 +22,7 @@ const EMPTY_FORM = {
   name: "",
   dosage: "",
   frequency: FREQUENCIES[0],
+  reminderTime: "", // e.g. "09:00"
   startDate: new Date().toISOString().split("T")[0],
   endDate: "",
   notes: "",
@@ -98,6 +100,7 @@ function MedCard({ med, onEdit, onDelete, onStatusToggle, dm, cardBg, cardBorder
           <p style={{ fontSize: "0.8rem", color: "#6366f1", fontWeight: 600, marginTop: "0.15rem" }}>
             {med.dosage ? `${med.dosage}  •  ` : ""}
             {med.frequency}
+            {med.reminderTime && `  •  ⏰ ${med.reminderTime}`}
           </p>
           <p style={{ fontSize: "0.73rem", color: textMuted, marginTop: "0.2rem" }}>
             📅 {med.startDate}
@@ -166,21 +169,56 @@ function MedCard({ med, onEdit, onDelete, onStatusToggle, dm, cardBg, cardBorder
 
 // ── Main component ──────────────────────────────────────────────────────────
 function MedicationTracker({ account, darkMode }) {
-  const storageKey = `medications_${account.toLowerCase()}`;
   const [medications, setMedications] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      setMedications(saved);
-    } catch {}
-  }, [storageKey]);
+    getMedications(account).then((saved) => setMedications(saved));
+  }, [account]);
+
+  // Request notification permissions
+  useEffect(() => {
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // Check reminder times every minute
+  useEffect(() => {
+    const checkAlarms = () => {
+      const now = new Date();
+      const currTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+      
+      const activeMeds = medications.filter(m => m.status === "active" && m.reminderTime);
+      activeMeds.forEach(med => {
+        // If the current minute string matches perfectly:
+        if (med.reminderTime === currTime) {
+          // Avoid duplicate popups in the same minute by checking a local tracking flag
+          const storageKey = `notified_${med.id}_${now.toDateString()}_${currTime}`;
+          if (!localStorage.getItem(storageKey)) {
+            localStorage.setItem(storageKey, "1");
+            if (Notification.permission === "granted") {
+              new Notification(`Time for Medicine: ${med.name}`, {
+                body: `Dosage: ${med.dosage || "Not specified"} (${med.frequency})`,
+                icon: "💊"
+              });
+            } else {
+              // Fallback if browser notifications disabled but app is open
+              alert(`💊 REMINDER: Time to take ${med.name} (${med.dosage || "No dosage specified"})`);
+            }
+          }
+        }
+      });
+    };
+
+    const interval = setInterval(checkAlarms, 10000); // Check every 10s
+    return () => clearInterval(interval);
+  }, [medications]);
 
   const persist = (list) => {
-    localStorage.setItem(storageKey, JSON.stringify(list));
+    saveMedicationsToDb(account, list);
     setMedications(list);
   };
 
@@ -345,6 +383,18 @@ function MedicationTracker({ account, darkMode }) {
                   <option key={f}>{f}</option>
                 ))}
               </select>
+            </div>
+            {/* Reminder Time */}
+            <div>
+              <label style={{ fontSize: "0.75rem", color: textMuted, fontWeight: 700 }}>
+                Reminder Time <span style={{ fontWeight: 400, opacity: 0.7 }}>(optional)</span>
+              </label>
+              <input
+                type="time"
+                value={form.reminderTime || ""}
+                onChange={(e) => setForm((f) => ({ ...f, reminderTime: e.target.value }))}
+                style={inputStyle}
+              />
             </div>
             {/* Start Date */}
             <div>
