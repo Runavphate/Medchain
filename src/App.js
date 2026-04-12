@@ -18,7 +18,7 @@ const sepolia = {
   name: 'Sepolia',
   currency: 'ETH',
   explorerUrl: 'https://sepolia.etherscan.io',
-  rpcUrl: 'https://rpc.sepolia.org'
+  rpcUrl: 'https://ethereum-sepolia-rpc.publicnode.com'
 };
 
 const metadata = {
