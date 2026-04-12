@@ -50,25 +50,33 @@ function App() {
   const [role, setRole] = useState("");
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("darkMode") === "true");
   // Role chosen on login page before wallet connects
-  const [, setPendingRole] = useState("");
+  const [pendingRole, setPendingRole] = useState("");
   // For notification bell: who this user can receive messages from
   const [bellPartners, setBellPartners] = useState([]);
 
   // Sync Web3Modal WalletConnect Wallet using Vanilla JS directly
   useEffect(() => {
-    // Initial State Check
-    if (web3modal.getIsConnected() && web3modal.getWalletProvider()) {
-      setAccount(web3modal.getAddress());
-      setGlobalProvider(web3modal.getWalletProvider());
-    }
+    // Disable auto-login on mount by clearing any active cache
+    const disableAutoLogin = async () => {
+      if (web3modal.getIsConnected()) {
+        try {
+          if (typeof web3modal.disconnect === "function") {
+            await web3modal.disconnect();
+          } else if (web3modal.adapter && typeof web3modal.adapter.disconnect === "function") {
+            await web3modal.adapter.disconnect();
+          }
+        } catch (e) {
+          console.error("Failed to disconnect cached session:", e);
+        }
+      }
+    };
+    disableAutoLogin();
 
     // Subscribe to state changes dynamically
     const unsubscribe = web3modal.subscribeProvider((state) => {
       if (state.isConnected && state.provider && state.address) {
         setAccount(state.address);
         setGlobalProvider(state.provider);
-        // If user pre-selected a role on the login page, apply it now
-        setPendingRole(prev => { if (prev) { setRole(prev); return ""; } return prev; });
       } else {
         // Handled globally if required
       }
@@ -76,6 +84,14 @@ function App() {
 
     return () => unsubscribe();
   }, []);
+
+  // When account is connected and a pending role exists from the login screen, apply it immediately.
+  useEffect(() => {
+    if (account && pendingRole && !role) {
+      setRole(pendingRole);
+      setPendingRole("");
+    }
+  }, [account, pendingRole, role]);
 
 
 
@@ -107,7 +123,17 @@ function App() {
     setAccount("");
     setRole("");
     setGlobalProvider(null);
-    try { if (web3modal.getIsConnected()) await web3modal.disconnect(); } catch (e) { console.error("Disconnect Error", e); }
+    try { 
+      if (web3modal.getIsConnected()) {
+        if (typeof web3modal.disconnect === "function") {
+          await web3modal.disconnect();
+        } else if (web3modal.adapter && typeof web3modal.adapter.disconnect === "function") {
+          await web3modal.adapter.disconnect();
+        }
+      } 
+    } catch (e) {
+      console.error("Disconnect Error", e); 
+    }
   };
 
 
