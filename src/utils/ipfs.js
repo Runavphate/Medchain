@@ -31,19 +31,33 @@ export const uploadEncryptedFile = async (file) => {
         formData.append("file", blob);
 
         console.log("Uploading file:", file.name);
-        const res = await axios.post(
-          "https://api.pinata.cloud/pinning/pinFileToIPFS",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              pinata_api_key: PINATA_API_KEY,
-              pinata_secret_api_key: PINATA_SECRET_KEY,
-            },
+        
+        let res;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            res = await axios.post(
+              "https://api.pinata.cloud/pinning/pinFileToIPFS",
+              formData,
+              {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                  pinata_api_key: PINATA_API_KEY,
+                  pinata_secret_api_key: PINATA_SECRET_KEY,
+                },
+                // Added a reasonable timeout to fail fast and retry if stalled
+                timeout: 30000,
+              }
+            );
+            break; // Break loop if upload was successful
+          } catch (err) {
+             console.warn(`Upload attempt ${attempt} failed: ${err.message}`);
+             if (attempt === 3) throw err;
+             // Wait for increasing intervals before retrying (backoff)
+             await new Promise((r) => setTimeout(r, attempt * 2000));
           }
-        );
+        }
 
-        if (!res.data.IpfsHash) throw new Error("No IPFS hash returned");
+        if (!res || !res.data || !res.data.IpfsHash) throw new Error("No IPFS hash returned");
         console.log("Upload successful, CID:", res.data.IpfsHash);
         resolve(res.data.IpfsHash);
       } catch (err) {
