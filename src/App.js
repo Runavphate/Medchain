@@ -41,7 +41,7 @@ const web3modal = createWeb3Modal({
   chains: [sepolia],
   defaultChain: sepolia, // Enforce Sepolia chain on connect
   projectId,
-  enableAnalytics: true,
+  enableAnalytics: false,
   themeMode: 'dark'
 });
 
@@ -74,9 +74,10 @@ function App() {
 
     // Subscribe to state changes dynamically
     const unsubscribe = web3modal.subscribeProvider((state) => {
-      if (state.isConnected && state.provider && state.address) {
+      const provider = state.walletProvider || state.provider || window.ethereum;
+      if (state.isConnected && provider && state.address) {
         setAccount(state.address);
-        setGlobalProvider(state.provider);
+        setGlobalProvider(provider);
       } else {
         // Handled globally if required
       }
