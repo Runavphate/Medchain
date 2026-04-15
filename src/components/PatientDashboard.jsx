@@ -193,9 +193,10 @@ function PatientDashboard({ account, darkMode }) {
       log("✅", `Granted access to ${doctorAddress.slice(0, 8)}…`);
       addGrantedDoctor(doctorAddress);
       loadRequests();
-    } catch {
+    } catch (err) {
+      console.error("grantAccess failed:", err);
       flashFailure();
-      toast.error("Failed to grant access");
+      toast.error(`Failed to grant access: ${err?.message || "unknown error"}`);
     } finally { setLoading(false); }
   };
 
@@ -210,9 +211,10 @@ function PatientDashboard({ account, darkMode }) {
       const next = grantedDoctors.filter(a => a !== doctorAddress);
       _saveGrantedDoctors(next);
       if (selectedDoctorForChat === doctorAddress) setSelectedDoctorForChat("");
-    } catch {
+    } catch (err) {
+      console.error("revokeAccess failed:", err);
       flashFailure();
-      toast.error("Failed to revoke access");
+      toast.error(`Failed to revoke access: ${err?.message || "unknown error"}`);
     } finally { setLoading(false); setConfirmRevoke(null); }
   };
 
@@ -292,8 +294,9 @@ function PatientDashboard({ account, darkMode }) {
       log("✅", `Granted access to ${doctor.trim().slice(0, 8)}…`);
       addGrantedDoctor(doctor.trim());
       setDoctor("");
-    } catch {
-      flashFailure(); toast.error("Transaction failed");
+    } catch (err) {
+      console.error("grantAccess failed:", err);
+      flashFailure(); toast.error(`Transaction failed: ${err?.message || "unknown error"}`);
     } finally { setLoading(false); }
   };
 
@@ -330,7 +333,8 @@ function PatientDashboard({ account, darkMode }) {
       flashSuccess();
       toast.success(`Found ${cids.length} record(s)`);
     } catch (err) {
-      flashFailure(); toast.error(`Failed: ${err.message}`);
+      console.error("getRecords failed:", err);
+      flashFailure(); toast.error(`Failed: ${err.message || "unknown error"}`);
     } finally { setLoading(false); }
   };
 
@@ -344,7 +348,8 @@ function PatientDashboard({ account, darkMode }) {
       log("✅", "Granted self-access");
       await handleRefreshRecords();
     } catch (err) {
-      flashFailure(); toast.error(`Failed: ${err.message}`);
+      console.error("grantAccess (self) failed:", err);
+      flashFailure(); toast.error(`Failed: ${err.message || "unknown error"}`);
     } finally { setLoading(false); }
   };
 

@@ -18,7 +18,7 @@ const sepolia = {
   name: 'Sepolia',
   currency: 'ETH',
   explorerUrl: 'https://sepolia.etherscan.io',
-  rpcUrl: 'https://ethereum-sepolia-rpc.publicnode.com'
+  rpcUrl: 'https://rpc.sepolia.org'
 };
 
 const metadata = {
@@ -74,7 +74,8 @@ function App() {
 
     // Subscribe to state changes dynamically
     const unsubscribe = web3modal.subscribeProvider((state) => {
-      const provider = state.walletProvider || state.provider || window.ethereum;
+      // Prefer the wallet-specific provider from Web3Modal, then standard window.ethereum
+      const provider = state.walletProvider || state.provider || (typeof window !== 'undefined' ? window.ethereum : null);
       if (state.isConnected && provider && state.address) {
         setAccount(state.address);
         setGlobalProvider(provider);
@@ -210,57 +211,6 @@ function App() {
 
       <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "6rem 2rem 3rem" }}>
         {!account && <LoginPage connectWeb3Modal={() => web3modal.open()} darkMode={darkMode} onRoleSelect={r => setPendingRole(r)} />}
-
-        {account && !role && (
-          <div style={{ minHeight: "calc(100vh - 120px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem" }}>
-            <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-              <h2 style={{ fontSize: "2rem", fontWeight: 800, color: textPrimary, marginBottom: "0.5rem" }}>Who is using MedChain?</h2>
-              <p style={{ color: subtext, fontSize: "1rem" }}>Select your role to continue. Switch anytime by disconnecting.</p>
-            </div>
-
-            <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", justifyContent: "center" }}>
-              {/* Patient Card */}
-              {[
-                {
-                  roleKey: "patient", emoji: "🧑", title: "I'm a Patient",
-                  desc: "Upload & manage your medical records securely on the blockchain.",
-                  features: ["🔒 Your data stays private", "📄 Upload records to IPFS", "🤝 Grant doctor access"],
-                  gradient: "linear-gradient(135deg, #d1fae5, #6ee7b7)", glowColor: "rgba(16,185,129,0.28)", borderHover: "#10b981",
-                  btnGrad: "linear-gradient(135deg, #10b981, #059669)", label: "Enter as Patient →",
-                },
-                {
-                  roleKey: "doctor", emoji: "👨‍⚕️", title: "I'm a Doctor",
-                  desc: "View patient records you've been granted permission to access.",
-                  features: ["✅ Blockchain permission check", "�️ View decrypted records", "🔐 Access only what's shared"],
-                  gradient: "linear-gradient(135deg, #e0e7ff, #a5b4fc)", glowColor: "rgba(99,102,241,0.28)", borderHover: "#6366f1",
-                  btnGrad: "linear-gradient(135deg, #6366f1, #4f46e5)", label: "Enter as Doctor →",
-                }
-              ].map(c => (
-                <div key={c.roleKey}
-                  onClick={() => setRole(c.roleKey)}
-                  style={{
-                    width: "280px", background: dm ? "#1e293b" : "#fff", borderRadius: "20px", padding: "2rem",
-                    boxShadow: `0 4px 24px ${c.glowColor.replace("0.28", "0.12")}`, border: `2px solid ${dm ? "#334155" : "#e2e8f0"}`,
-                    cursor: "pointer", transition: "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
-                    display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "1rem",
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = `0 12px 40px ${c.glowColor}`; e.currentTarget.style.borderColor = c.borderHover; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 4px 24px ${c.glowColor.replace("0.28", "0.12")}`; e.currentTarget.style.borderColor = dm ? "#334155" : "#e2e8f0"; }}
-                >
-                  <div style={{ width: "72px", height: "72px", borderRadius: "20px", background: c.gradient, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.2rem" }}>{c.emoji}</div>
-                  <h3 style={{ fontSize: "1.4rem", fontWeight: 800, color: textPrimary }}>{c.title}</h3>
-                  <p style={{ color: subtext, fontSize: "0.875rem", lineHeight: 1.6 }}>{c.desc}</p>
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0, width: "100%", textAlign: "left" }}>
-                    {c.features.map(f => (
-                      <li key={f} style={{ fontSize: "0.8rem", color: dm ? "#94a3b8" : "#475569", padding: "0.3rem 0", borderBottom: `1px solid ${dm ? "#1e293b" : "#f1f5f9"}` }}>{f}</li>
-                    ))}
-                  </ul>
-                  <div style={{ width: "100%", padding: "0.75rem", background: c.btnGrad, color: "#fff", borderRadius: "12px", fontWeight: 700, fontSize: "0.95rem" }}>{c.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {role === "patient" && <PatientDashboard account={account} darkMode={darkMode} />}
         {role === "doctor" && <DoctorDashboard account={account} darkMode={darkMode} />}

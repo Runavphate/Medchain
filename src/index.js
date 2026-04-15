@@ -1,3 +1,4 @@
+import './utils/silence-web3';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';

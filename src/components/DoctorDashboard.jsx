@@ -159,8 +159,9 @@ function DoctorDashboard({ account, darkMode }) {
       toast.success("Access request sent!");
       log("🔔", `Requested access from ${patient.trim().slice(0, 8)}…`);
       setRequestSent(true);
-    } catch {
-      flashFailure(); toast.error("Failed to send request");
+    } catch (err) {
+      console.error("requestAccessOnChain failed:", err);
+      flashFailure(); toast.error(`Failed to send request: ${err?.message || "unknown error"}`);
     } finally { setLoading(false); }
   };
 
@@ -178,10 +179,11 @@ function DoctorDashboard({ account, darkMode }) {
       flashSuccess();
       toast.success(`${cids.length} record(s) unlocked 🔓`);
       log("👁️", `Viewed records of ${patient.slice(0, 8)}…`);
-    } catch {
+    } catch (err) {
+      console.error("getRecords failed:", err);
       setRecords([]);
       flashFailure();
-      toast.error("Access denied — patient must approve first");
+      toast.error(`Access denied — ${err?.message || "patient must approve first"}`);
     } finally { setLoading(false); }
   };
 
