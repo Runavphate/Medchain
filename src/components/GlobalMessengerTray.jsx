@@ -7,7 +7,6 @@ function GlobalMessengerTray({ account, role, darkMode, contactAddresses }) {
   const [activeChatAddress, setActiveChatAddress] = useState(null);
   const [activeChatName, setActiveChatName] = useState("");
   const [contactDetails, setContactDetails] = useState([]);
-  const [unreadCounts, setUnreadCounts] = useState({});
 
   const dm = darkMode;
 

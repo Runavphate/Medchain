@@ -4,7 +4,7 @@ import { decryptAndViewFile } from "../utils/ipfs";
 import LoadingOverlay from "./LoadingOverlay";
 import { ToastContainer, useToast } from "./Toast";
 import DoctorNotes from "./DoctorNotes";
-import Messaging from "./Messaging";
+
 import {
   getUserProfile, patchUserProfile,
   getActivityLog, addActivityLogEntry,

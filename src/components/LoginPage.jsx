@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import logo from "../assets/medchain-logo.svg";
+
 
 function LoginPage({ connectWeb3Modal, darkMode, onRoleSelect }) {
   const dm = darkMode;

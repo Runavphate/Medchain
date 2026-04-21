@@ -10,7 +10,7 @@ import LoadingOverlay from "./LoadingOverlay";
 import ConfirmDialog from "./ConfirmDialog";
 import { ToastContainer, useToast } from "./Toast";
 import MedicationTracker from "./MedicationTracker";
-import Messaging from "./Messaging";
+
 import {
   getUserProfile, patchUserProfile,
   getGrantedDoctors, setGrantedDoctors as saveGrantedDoctors,
