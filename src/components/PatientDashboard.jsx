@@ -431,8 +431,8 @@ function PatientDashboard({ account, darkMode }) {
 
       <div className="mt-14">
         {/* Header */}
-        <h2 className="text-4xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-teal-400">
-          {patientName ? `Welcome, ${patientName} 👋` : "Patient Dashboard"}
+        <h2 style={{ fontFamily: "Playfair Display, serif", fontSize: "2.8rem", fontWeight: 400, color: textPrimary, marginBottom: "1rem", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+          {patientName ? `Welcome, ${patientName}` : "Patient Dashboard"}
         </h2>
 
         {/* Name input */}
@@ -553,7 +553,6 @@ function PatientDashboard({ account, darkMode }) {
           {[
             { id: "records", label: `📋 Records (${uploadedCids.length})` },
             { id: "meds", label: "💊 Medications" },
-            { id: "messages", label: "💬 Messages" },
             { id: "analytics", label: "📊 Analytics" },
             { id: "activity", label: `🕑 Activity (${activityLog.length})` },
             { id: "audit", label: "⛓ Audit Log" },
@@ -627,108 +626,6 @@ function PatientDashboard({ account, darkMode }) {
             <MedicationTracker account={account} darkMode={darkMode} />
           </div>
         )}
-
-        {/* ── Tab: Messages ───────────────────────────────────── */}
-        {activeTab === "messages" && (
-          <div className="card" style={{ background: cardBg, border: `1px solid ${cardBorder}` }}>
-            <h3 className="card-header" style={{ color: textPrimary }}>💬 Messages</h3>
-            {grantedDoctors.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "3rem 2rem" }}>
-                <p style={{ fontSize: "2.5rem" }}>🔐</p>
-                <p style={{ color: textPrimary, fontWeight: 700, marginTop: "0.75rem" }}>No doctors yet</p>
-                <p style={{ color: textMuted, fontSize: "0.85rem", marginTop: "0.3rem" }}>Grant a doctor access first to start messaging.</p>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-
-                {/* Doctor picker cards */}
-                <div>
-                  <p style={{ fontSize: "0.75rem", color: textMuted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.75rem" }}>
-                    Select a doctor to chat with
-                  </p>
-                  <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-                    {grantedDoctors.map(docAddr => {
-                      const docProfile = registeredDoctors.find(d => d.addr === docAddr.toLowerCase()) || {};
-                      const dName = docProfile.name || "";
-                      const dHospital = docProfile.hospital || "";
-                      const isSelected = selectedDoctorForChat === docAddr;
-                      // Generate a consistent avatar color from the address
-                      const hue = parseInt(docAddr.slice(2, 4), 16) % 360;
-                      return (
-                        <button
-                          key={docAddr}
-                          onClick={() => setSelectedDoctorForChat(isSelected ? "" : docAddr)}
-                          style={{
-                            display: "flex", alignItems: "center", gap: "0.75rem",
-                            padding: "0.75rem 1.1rem",
-                            background: isSelected
-                              ? "linear-gradient(135deg, #6366f1, #4f46e5)"
-                              : (dm ? "#0f172a" : "#f8fafc"),
-                            border: `2px solid ${isSelected ? "#6366f1" : (dm ? "#334155" : "#e2e8f0")}`,
-                            borderRadius: "14px", cursor: "pointer",
-                            transition: "all 0.18s ease",
-                            boxShadow: isSelected ? "0 4px 20px rgba(99,102,241,0.35)" : "none",
-                            textAlign: "left",
-                          }}
-                          onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(99,102,241,0.18)"; } }}
-                          onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.borderColor = dm ? "#334155" : "#e2e8f0"; e.currentTarget.style.boxShadow = "none"; } }}
-                        >
-                          {/* Avatar */}
-                          <div style={{
-                            width: "42px", height: "42px", borderRadius: "50%", flexShrink: 0,
-                            background: isSelected ? "rgba(255,255,255,0.2)" : `hsl(${hue}, 60%, ${dm ? "30%" : "88%"})`,
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: "1.2rem", border: isSelected ? "2px solid rgba(255,255,255,0.3)" : "none",
-                          }}>
-                            {dName ? dName[0].toUpperCase() : "👨‍⚕️"}
-                          </div>
-                          {/* Info */}
-                          <div>
-                            <p style={{ fontWeight: 700, fontSize: "0.9rem", color: isSelected ? "#fff" : textPrimary, lineHeight: 1.2 }}>
-                              {dName ? `Dr. ${dName}` : "Unknown Doctor"}
-                            </p>
-                            {dHospital && (
-                              <p style={{ fontSize: "0.73rem", color: isSelected ? "rgba(255,255,255,0.75)" : textMuted, marginTop: "0.1rem" }}>
-                                🏥 {dHospital}
-                              </p>
-                            )}
-                            <p style={{ fontSize: "0.65rem", color: isSelected ? "rgba(255,255,255,0.55)" : (dm ? "#475569" : "#cbd5e1"), marginTop: "0.1rem", fontFamily: "monospace" }}>
-                              {docAddr.slice(0, 8)}…{docAddr.slice(-6)}
-                            </p>
-                          </div>
-                          {/* Selected check */}
-                          {isSelected && (
-                            <span style={{ marginLeft: "auto", fontSize: "1.1rem" }}>✅</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Chat window */}
-                {selectedDoctorForChat && (() => {
-                  const chatDoc = registeredDoctors.find(d => d.addr === selectedDoctorForChat.toLowerCase()) || {};
-                  const chatDocName = chatDoc.name || "";
-                  return (
-                    <div style={{ borderTop: `1px solid ${cardBorder}`, paddingTop: "1.25rem" }}>
-                      <Messaging
-                        currentUserAddress={account.toLowerCase()}
-                        otherUserAddress={selectedDoctorForChat.toLowerCase()}
-                        otherUserName={chatDocName}
-                        role="patient"
-                        darkMode={darkMode}
-                      />
-                    </div>
-                  );
-                })()}
-
-              </div>
-            )}
-          </div>
-        )}
-
-
 
         {/* ── Tab: Analytics ───────────────────────────────────── */}
         {activeTab === "analytics" && (

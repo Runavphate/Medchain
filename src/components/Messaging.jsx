@@ -88,13 +88,13 @@ function Messaging({ currentUserAddress, otherUserAddress, otherUserName, role, 
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "500px", border: `1px solid ${border}`, borderRadius: "16px", background: dm ? "#1e293b" : "#fff", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: dm ? "#1e293b" : "#fff", overflow: "hidden" }}>
 
       {/* ── Header ── */}
       <div style={{ padding: "1rem 1.25rem", borderBottom: `1px solid ${border}`, background: dm ? "#0f172a" : "#f1f5f9", display: "flex", alignItems: "center", gap: "0.75rem", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: role === "patient" ? "linear-gradient(135deg, #fce7f3, #f472b6)" : "linear-gradient(135deg, #e0e7ff, #818cf8)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem" }}>
-            {role === "patient" ? "👨‍⚕️" : "🧑"}
+          <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: dm ? "linear-gradient(135deg, #050a1f, #1e293b)" : "linear-gradient(135deg, #fdfbf7, #d8daff)", border: `1px solid ${dm ? "#334155" : "#c6f5f0"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", fontWeight: 700, fontFamily: "Playfair Display, serif", color: dm ? "#c6f5f0" : "#050a1f" }}>
+            {role === "patient" ? "D" : "P"}
           </div>
           <div>
             <h4 style={{ margin: 0, color: textPrimary, fontSize: "0.95rem", fontWeight: 700 }}>
@@ -184,12 +184,12 @@ function Messaging({ currentUserAddress, otherUserAddress, otherUserName, role, 
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder={connected ? "Type a message…" : "Reconnecting…"}
             disabled={!connected}
-            style={{ flex: 1, padding: "0.75rem 1.25rem", borderRadius: "999px", border: `1px solid ${border}`, background: dm ? "#1e293b" : "#fff", color: textPrimary, outline: "none", fontSize: "0.95rem", opacity: connected ? 1 : 0.6 }}
+            style={{ flex: 1, minWidth: 0, padding: "0.75rem 1rem", borderRadius: "999px", border: `1px solid ${border}`, background: dm ? "#1e293b" : "#fff", color: textPrimary, outline: "none", fontSize: "0.9rem", opacity: connected ? 1 : 0.6 }}
           />
           <button
             onClick={() => handleSend()}
             disabled={!input.trim() || !connected}
-            style={{ padding: "0 1.5rem", borderRadius: "999px", background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff", border: "none", fontWeight: 700, cursor: input.trim() && connected ? "pointer" : "not-allowed", opacity: input.trim() && connected ? 1 : 0.5, transition: "opacity 0.2s" }}
+            style={{ flexShrink: 0, padding: "0 1.2rem", borderRadius: "999px", background: dm ? "#d8daff" : "#050a1f", color: dm ? "#050a1f" : "#fdfbf7", border: "none", fontWeight: 700, cursor: input.trim() && connected ? "pointer" : "not-allowed", opacity: input.trim() && connected ? 1 : 0.5, transition: "opacity 0.2s" }}
           >
             Send
           </button>

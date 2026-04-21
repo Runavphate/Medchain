@@ -3,6 +3,8 @@ import PatientDashboard from "./components/PatientDashboard";
 import DoctorDashboard from "./components/DoctorDashboard";
 import LoginPage from "./components/LoginPage";
 import NotificationBell from "./components/NotificationBell";
+import GlobalMessengerTray from "./components/GlobalMessengerTray";
+import NetworkBackground from "./components/NetworkBackground";
 import { getGrantedDoctors, listUsersByRole } from "./utils/db";
 
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers';
@@ -141,26 +143,28 @@ function App() {
 
 
   const dm = darkMode;
-  const navBg = dm ? "rgba(15,23,42,0.92)" : "rgba(255,255,255,0.88)";
-  const textPrimary = dm ? "#f1f5f9" : "#1e293b";
-  const subtext = dm ? "#94a3b8" : "#64748b";
-  const pageBg = dm ? "#0f172a" : "#f1f5f9";
+  const navBg = dm ? "rgba(5, 10, 31, 0.95)" : "rgba(253, 251, 247, 0.95)";
+  const textPrimary = dm ? "#fdfbf7" : "#050a1f";
+  const subtext = dm ? "rgba(216, 218, 255, 0.7)" : "rgba(5, 10, 31, 0.6)";
+  const pageBg = dm ? "#050a1f" : "#fdfbf7";
 
   return (
-    <div style={{ minHeight: "100vh", background: pageBg, overflowX: "hidden" }}>
+    <div className="selection:bg-teal-500/25 selection:text-inherit" style={{ minHeight: "100vh", background: pageBg, overflowX: "hidden", color: textPrimary, transition: "background 0.3s ease" }}>
+      <NetworkBackground darkMode={dm} />
       {/* ── Navbar ── */}
       <nav style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-        backdropFilter: "blur(12px)", background: navBg,
-        boxShadow: dm ? "0 1px 0 rgba(255,255,255,0.06)" : "0 1px 0 rgba(0,0,0,0.08)",
-        padding: "0.9rem 2rem",
+        backdropFilter: "blur(20px)", background: navBg,
+        boxShadow: dm ? "0 1px 0 rgba(216, 218, 255, 0.08)" : "0 1px 0 rgba(5, 10, 31, 0.05)",
+        padding: "1rem 2rem",
+        transition: "background 0.3s ease, box-shadow 0.3s ease"
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: "1200px", margin: "0 auto" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <img src={logo} alt="MedChain logo" style={{ height: "46px", width: "46px" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <img src={logo} alt="MedChain logo" style={{ height: "48px", width: "48px" }} />
             <div>
-              <h1 style={{ fontSize: "1.6rem", fontWeight: 800, color: textPrimary, lineHeight: 1.1 }}>MedChain</h1>
-              <p style={{ fontSize: "0.72rem", color: subtext }}>Blockchain-powered medical record security</p>
+              <h1 style={{ fontFamily: "Playfair Display, serif", fontSize: "1.8rem", fontWeight: 700, color: textPrimary, lineHeight: 1.1, letterSpacing: "-0.02em" }}>MedChain</h1>
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: "0.75rem", color: subtext, fontWeight: 500, letterSpacing: "0.02em" }}>Blockchain-secured medical records</p>
             </div>
           </div>
 
@@ -215,12 +219,16 @@ function App() {
         {role === "patient" && <PatientDashboard account={account} darkMode={darkMode} />}
         {role === "doctor" && <DoctorDashboard account={account} darkMode={darkMode} />}
 
-        {role && (
-          <button onClick={() => setRole("")} style={{ marginTop: "2rem", fontSize: "0.875rem", color: dm ? "#818cf8" : "#3b82f6", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
-            ← Switch Role
-          </button>
-        )}
+
       </main>
+
+      {/* ── Global LinkedIn Style Messenger ── */}
+      <GlobalMessengerTray 
+        account={account}
+        role={role}
+        darkMode={darkMode}
+        contactAddresses={bellPartners}
+      />
     </div>
   );
 }

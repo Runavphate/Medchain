@@ -9,6 +9,7 @@ import {
   getUserProfile, patchUserProfile,
   getActivityLog, addActivityLogEntry,
   listUsersByRole, getUserProfile as fetchProfile,
+  getRecordMeta,
 } from "../utils/db";
 
 const CATEGORY_COLORS = {
@@ -94,6 +95,7 @@ function DoctorDashboard({ account, darkMode }) {
   const [auditLog, setAuditLog] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
   const [registeredPatients, setRegisteredPatients] = useState([]);
+  const [recordMetas, setRecordMetas] = useState({});
 
   const { toasts, removeToast, toast } = useToast();
 
@@ -166,18 +168,28 @@ function DoctorDashboard({ account, darkMode }) {
   };
 
   const fetchRecords = async () => {
-    if (!patient.trim()) return;
-    if (!isValidAddress(patient)) { setPatientError("Invalid Ethereum address"); return; }
-    setPatientError("");
+    if (!patient.trim() || !isValidAddress(patient)) {
+      setPatientError("Please enter a valid wallet address (0x…)");
+      return;
+    }
+    setLoading(true); setStatus("Fetching patient records…");
+    setRecords([]); setRecordMetas({});
     try {
-      setLoading(true); setStatus("Fetching records…");
-      const cids = await getRecords(patient);
-      setRecords(cids);
-      setRequestSent(false);
+      const result = await getRecords(patient.trim());
+      setRecords(result || []);
+      setActiveTab("records");
+      // Fetch metadata for each CID from Firebase
+      if (result && result.length > 0) {
+        const pairs = await Promise.all(
+          result.map(cid => getRecordMeta(cid).then(m => [cid, m]))
+        );
+        setRecordMetas(Object.fromEntries(pairs.filter(([, m]) => m)));
+      }
+      log("📂", `Fetched ${result?.length || 0} records from ${patient.slice(0, 8)}…`);
       const profile2 = await fetchProfile(patient.toLowerCase());
       setPatientName(profile2?.name || "");
       flashSuccess();
-      toast.success(`${cids.length} record(s) unlocked 🔓`);
+      toast.success(`${result.length} record(s) unlocked 🔓`);
       log("👁️", `Viewed records of ${patient.slice(0, 8)}…`);
     } catch (err) {
       console.error("getRecords failed:", err);
@@ -249,8 +261,8 @@ function DoctorDashboard({ account, darkMode }) {
       <div className="mt-14">
         {/* Header with verified badge */}
         <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "0.5rem", flexWrap: "wrap" }}>
-          <h2 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-400">
-            {doctorName ? `Welcome, Dr. ${doctorName} 👨‍⚕️` : "Doctor Dashboard"}
+          <h2 style={{ fontFamily: "Playfair Display, serif", fontSize: "2.8rem", fontWeight: 400, color: textPrimary, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+            {doctorName ? `Welcome, Dr. ${doctorName}` : "Doctor Dashboard"}
           </h2>
           {verified && (
             <span style={{ background: "linear-gradient(135deg, #d1fae5, #6ee7b7)", color: "#065f46", fontWeight: 700, fontSize: "0.78rem", borderRadius: "999px", padding: "0.35rem 0.85rem", border: "1.5px solid #6ee7b7" }}>
@@ -309,8 +321,8 @@ function DoctorDashboard({ account, darkMode }) {
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", maxHeight: "120px", overflowY: "auto", padding: "0.75rem", background: dm ? "#0f172a" : "#f8fafc", borderRadius: "10px", border: `1px solid ${cardBorder}` }}>
                 {registeredPatients.map(p => (
                   <button key={p.addr} onClick={() => handlePatientAddressChange(p.addr)}
-                    style={{ padding: "0.45rem 1rem", background: patient === p.addr ? "linear-gradient(135deg, #3b82f6, #2563eb)" : (dm ? "#1e293b" : "#fff"), color: patient === p.addr ? "#fff" : textPrimary, border: `1px solid ${patient === p.addr ? "#2563eb" : cardBorder}`, borderRadius: "8px", fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", transition: "all 0.15s", fontWeight: patient === p.addr ? 700 : 500 }}>
-                    👤 {p.name}
+                    style={{ padding: "0.45rem 1rem", background: patient === p.addr ? (dm ? "linear-gradient(135deg, #d8daff, #c6f5f0)" : "linear-gradient(135deg, #050a1f, #1e293b)") : (dm ? "#1e293b" : "#fff"), color: patient === p.addr ? (dm ? "#050a1f" : "#fdfbf7") : textPrimary, border: `1px solid ${patient === p.addr ? (dm ? "#c6f5f0" : "#050a1f") : cardBorder}`, borderRadius: "8px", fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.4rem", transition: "all 0.15s", fontWeight: patient === p.addr ? 700 : 500 }}>
+                    <span style={{fontFamily: "Playfair Display, serif", fontWeight: 700, opacity: 0.8}}>P</span> {p.name}
                   </button>
                 ))}
               </div>
@@ -322,7 +334,9 @@ function DoctorDashboard({ account, darkMode }) {
             style={{ width: "100%", border: `1px solid ${patientError ? "#f87171" : inputBorder}`, background: inputBg, color: textPrimary, borderRadius: "8px", padding: "0.75rem", marginBottom: patientError ? "0.25rem" : "0" }} />
           {patientError && <p style={{ color: "#ef4444", fontSize: "0.75rem", marginTop: "0.25rem" }}>{patientError}</p>}
           {patientName && !patientError && (
-            <span style={{ display: "inline-block", marginTop: "0.75rem", fontSize: "0.82rem", color: dm ? "#e0f2fe" : "#0369a1", background: dm ? "rgba(2, 132, 199, 0.4)" : "#e0f2fe", borderRadius: "8px", padding: "0.3rem 0.75rem", fontWeight: 600 }}>👤 Selected: {patientName}</span>
+            <span style={{ display: "inline-block", marginTop: "0.75rem", fontSize: "0.82rem", color: dm ? "#050a1f" : "#fdfbf7", background: dm ? "#c6f5f0" : "#050a1f", borderRadius: "8px", padding: "0.3rem 0.75rem", fontWeight: 600 }}>
+               <span style={{fontFamily: "Playfair Display, serif", opacity: 0.8, marginRight: "4px"}}>P</span> Selected: {patientName}
+            </span>
           )}
           <div className="flex gap-3 flex-wrap mt-4">
             <button onClick={handleRequestAccess} disabled={!patient.trim() || requestSent} className="btn-secondary" style={{ opacity: !patient.trim() || requestSent ? 0.5 : 1 }} id="request-access-btn">
@@ -340,7 +354,6 @@ function DoctorDashboard({ account, darkMode }) {
           <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
             {records.length > 0 && <button style={tabStyle("records")} onClick={() => setActiveTab("records")}>📂 Records ({records.length})</button>}
             {patient.trim() && isValidAddress(patient) && <button style={tabStyle("notes")} onClick={() => setActiveTab("notes")}>📝 Notes</button>}
-            {patient.trim() && isValidAddress(patient) && <button style={tabStyle("messages")} onClick={() => setActiveTab("messages")}>💬 Messages</button>}
             <button style={tabStyle("activity")} onClick={() => setActiveTab("activity")}>🕑 Activity ({activityLog.length})</button>
             <button style={tabStyle("audit")} onClick={() => setActiveTab("audit")}>⛓ Audit Log</button>
           </div>
@@ -352,8 +365,7 @@ function DoctorDashboard({ account, darkMode }) {
             <h4 className="card-header" style={{ color: textPrimary }}>📂 {patientName ? `${patientName}'s Medical Records` : "Patient Medical Records"}</h4>
             <ul className="space-y-2">
               {records.map((cid, i) => {
-                let meta = null;
-                try { meta = JSON.parse(localStorage.getItem(`recordMeta_${cid}`)); } catch { }
+                const meta = recordMetas[cid] || null;
                 const catStyle = meta ? (CATEGORY_COLORS[meta.category] || CATEGORY_COLORS["Other"]) : null;
                 return (
                   <li key={i} style={{ background: dm ? "#0f172a" : "#f8fafc", borderRadius: "12px", padding: "0.75rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", border: `1px solid ${cardBorder}` }}>
@@ -406,20 +418,6 @@ function DoctorDashboard({ account, darkMode }) {
               account={account}
               patientAddress={patient.trim()}
               patientName={patientName}
-              darkMode={darkMode}
-            />
-          </div>
-        )}
-
-        {/* Messages Tab */}
-        {activeTab === "messages" && (
-          <div className="card" style={{ background: cardBg, border: `1px solid ${cardBorder}` }}>
-            <h3 className="card-header" style={{ color: textPrimary }}>💬 Messages</h3>
-            <Messaging
-              currentUserAddress={account.toLowerCase()}
-              otherUserAddress={patient.trim().toLowerCase()}
-              otherUserName={patientName}
-              role="doctor"
               darkMode={darkMode}
             />
           </div>

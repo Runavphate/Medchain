@@ -1,60 +1,108 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   body {
-    @apply font-sans bg-gray-50 text-gray-800;
+    @apply font-sans bg-[#fdfbf7] text-[#050a1f];
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  ::selection {
+    background-color: rgba(198, 245, 240, 0.25); /* Translucent clinical teal */
+    color: inherit;
+  }
+  ::-moz-selection {
+    background-color: rgba(198, 245, 240, 0.25);
+    color: inherit;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif tracking-tight text-[#050a1f];
+  }
+
+  .dark body {
+    @apply bg-[#050a1f] text-[#d8daff];
+  }
+
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    @apply text-[#fdfbf7];
+  }
+  
+  /* Remove aggressive focus outlines, use softer ones */
+  *:focus-visible {
+    outline: 2px solid rgba(198, 245, 240, 0.5);
+    outline-offset: 2px;
   }
 }
 
 /* card component */
 @layer components {
   .card {
-    @apply bg-white rounded-2xl shadow-lg p-6;
-    transition: box-shadow 0.22s ease, transform 0.22s ease;
+    @apply bg-white rounded-3xl p-8;
+    box-shadow: 0 10px 40px -10px rgba(5, 10, 31, 0.05);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+    border: 1px solid rgba(216, 218, 255, 0.3);
+  }
+
+  .dark .card {
+    @apply bg-[#0f172a] border-[#1e293b];
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.4);
   }
 
   .card:hover {
-    @apply shadow-2xl;
+    box-shadow: 0 20px 40px -10px rgba(5, 10, 31, 0.1);
     transform: translateY(-2px);
   }
 
-  .card-header {
-    @apply text-xl font-bold mb-4;
+  .dark .card:hover {
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
   }
 
+  .card-header {
+    @apply text-2xl font-bold mb-6 font-serif;
+  }
+
+  /* Core buttons styled for clinical/premium */
   .btn-primary {
-    @apply inline-block px-5 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition font-semibold;
-    transition: background 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+    @apply inline-block px-6 py-3 bg-[#050a1f] text-[#fdfbf7] rounded-xl font-medium tracking-wide shadow-sm hover:shadow-md transition-all duration-300;
+  }
+  
+  .dark .btn-primary {
+    @apply bg-[#d8daff] text-[#050a1f];
   }
 
   .btn-primary:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(5, 10, 31, 0.15);
+  }
+
+  .dark .btn-primary:hover:not(:disabled) {
+    box-shadow: 0 8px 20px rgba(216, 218, 255, 0.2);
   }
 
   .btn-secondary {
-    @apply inline-block px-5 py-3 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition font-semibold;
-    transition: background 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+    @apply inline-block px-6 py-3 border-2 border-[#050a1f] text-[#050a1f] bg-transparent rounded-xl font-medium tracking-wide hover:bg-[#050a1f] hover:text-[#fdfbf7] transition-all duration-300;
   }
 
-  .btn-secondary:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.3);
+  .dark .btn-secondary {
+    @apply border-[#d8daff] text-[#d8daff] hover:bg-[#d8daff] hover:text-[#050a1f];
   }
 
   .btn-alert {
-    @apply inline-block px-5 py-3 bg-orange-600 text-white rounded-lg shadow hover:bg-orange-700 transition font-semibold;
-    transition: background 0.15s ease, transform 0.12s ease;
+    @apply inline-block px-6 py-3 border-2 border-red-500/50 text-red-600 bg-red-50/50 rounded-xl font-medium tracking-wide hover:bg-red-500 hover:text-white transition-all duration-300;
   }
 
-  .btn-alert:hover:not(:disabled) {
-    transform: translateY(-1px);
+  .dark .btn-alert {
+    @apply bg-red-900/20 text-red-400 border-red-800/50 hover:bg-red-500 hover:text-white;
   }
 }
 
