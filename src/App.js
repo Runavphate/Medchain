@@ -24,9 +24,9 @@ const sepolia = {
 const metadata = {
   name: 'MedChain',
   description: 'MedChain Decentralized Medical Records',
-  // Use the actual current origin so WalletConnect works on Vercel, localhost, and any other host
+  // Automatically use the current origin (localhost, Vercel, etc.)
   url: typeof window !== 'undefined' ? window.location.origin : 'https://medchain.vercel.app',
-  icons: ['https://avatars.mywebsite.com/']
+  icons: ['https://medchain.vercel.app/logo192.png']
 };
 
 const ethersConfig = defaultConfig({
