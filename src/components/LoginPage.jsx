@@ -86,7 +86,7 @@ function LoginPage({ connectWeb3Modal, darkMode, onRoleSelect }) {
           <h2 
             className="animate-fade-in-up"
             style={{
-            color: "#fdfbf7",
+            color: dm ? "#fdfbf7" : "#050a1f",
             fontFamily: "Playfair Display, serif",
             fontSize: "3.5rem",
             fontWeight: 400,
@@ -96,12 +96,12 @@ function LoginPage({ connectWeb3Modal, darkMode, onRoleSelect }) {
             opacity: 0
           }}>
             Your health data.<br/>
-            <span style={{ color: "#d8daff", fontStyle: "italic" }}>Absolute control.</span>
+            <span style={{ color: dm ? "#d8daff" : "#4f46e5", fontStyle: "italic" }}>Absolute control.</span>
           </h2>
           <p 
             className="animate-fade-in-up-delay-1"
             style={{
-            color: "rgba(253, 251, 247, 0.7)",
+            color: dm ? "rgba(253, 251, 247, 0.7)" : "rgba(5, 10, 31, 0.65)",
             fontFamily: "Inter, sans-serif",
             fontSize: "1.05rem",
             maxWidth: "400px",
@@ -123,10 +123,10 @@ function LoginPage({ connectWeb3Modal, darkMode, onRoleSelect }) {
               <div key={label} style={{
                 display: "flex", alignItems: "center", gap: "1rem"
               }}>
-                <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "rgba(216, 218, 255, 0.1)", border: "1px solid rgba(216, 218, 255, 0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ color: "#d8daff", fontSize: "0.7rem" }}>✓</span>
+                <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: dm ? "rgba(216, 218, 255, 0.1)" : "rgba(5, 10, 31, 0.08)", border: `1px solid ${dm ? "rgba(216, 218, 255, 0.3)" : "rgba(5, 10, 31, 0.2)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ color: dm ? "#d8daff" : "#050a1f", fontSize: "0.7rem" }}>✓</span>
                 </div>
-                <span style={{ color: "#d8daff", fontSize: "0.95rem", fontWeight: 400, letterSpacing: "0.02em" }}>{label}</span>
+                <span style={{ color: dm ? "#d8daff" : "#050a1f", fontSize: "0.95rem", fontWeight: 400, letterSpacing: "0.02em" }}>{label}</span>
               </div>
             ))}
           </div>
