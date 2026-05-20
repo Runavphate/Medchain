@@ -14,7 +14,6 @@ import logo from "./assets/medchain-logo.svg";
 
 // 1. Web3Modal Configuration
 const projectId = '1c72c1484a9d982f01b4ce42b1312fa0';
-
 const sepolia = {
   chainId: 11155111,
   name: 'Sepolia',

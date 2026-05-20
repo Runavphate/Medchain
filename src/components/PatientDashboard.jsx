@@ -269,6 +269,7 @@ function PatientDashboard({ account, darkMode }) {
       const guessedType = file.type && file.type !== "" ? file.type : guessMimeFromFileName(file.name);
       const meta = { fileName: file.name, fileType: guessedType, uploadDate: new Date().toLocaleDateString("en-IN"), category };
       await setRecordMeta(cid, meta);
+      setAllMetas(prev => ({ ...prev, [cid]: meta }));
       setUploadedCids(prev => [...prev, cid]);
       flashSuccess();
       toast.success(`"${file.name}" uploaded successfully`);

@@ -200,8 +200,7 @@ function DoctorDashboard({ account, darkMode }) {
   };
 
   const handleViewFile = async (cid) => {
-    let meta = null;
-    try { meta = JSON.parse(localStorage.getItem(`recordMeta_${cid}`)); } catch { }
+    const meta = recordMetas[cid] || null;
     try {
       setLoading(true); setStatus("Decrypting…");
       const fileData = await decryptAndViewFile(cid);

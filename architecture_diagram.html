@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedChain Architecture Diagram</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: white;
+        }
+        .diagram-container {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        h2 {
+            color: #333;
+            text-align: center;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="diagram-container">
+        <h2>🏥 MedChain - Decentralized Medical Records Architecture</h2>
+        <div class="mermaid">
+graph TB
+    subgraph Users["👥 Users"]
+        Patient["🏥 Patient<br/>Medical Record Owner"]
+        Doctor["👨‍⚕️ Doctor<br/>Access Requestor"]
+    end
+
+    subgraph Frontend["🖥️ Frontend Layer - React"]
+        Login["🔐 Login Page<br/>Wallet Authentication"]
+        PatientDash["📊 Patient Dashboard<br/>Manage Access & Records"]
+        DoctorDash["📋 Doctor Dashboard<br/>Request Access"]
+        Msg["💬 Secure Messaging"]
+        Bell["🔔 Notifications"]
+    end
+
+    subgraph Web3["🌐 Web3 Layer"]
+        Web3M["🔗 Web3Modal<br/>Wallet Management"]
+        Wallets["💳 MetaMask<br/>Coinbase Wallet"]
+    end
+
+    subgraph Blockchain["⛓️ Blockchain Layer - Ethereum Sepolia"]
+        SC["📜 Smart Contract<br/>MedicalAccess.sol<br/><br/>✓ grantAccess<br/>✓ requestAccess<br/>✓ revokeAccess<br/>✓ addRecord<br/>✓ clearRecords"]
+    end
+
+    subgraph Storage["💾 Storage Layer"]
+        IPFS["🌍 IPFS Network<br/>Encrypted Medical Records<br/>Content-Addressed Hash"]
+        Firebase["🔥 Firebase Realtime DB<br/>- User Profiles<br/>- Access Logs<br/>- Push Notifications<br/>- Messaging Queue"]
+    end
+
+    subgraph Utils["🛠️ Utility Layer"]
+        ContractLib["📝 contract.js<br/>Web3 Integration"]
+        DBLib["💾 db.js<br/>Firebase Queries"]
+        IPFSLib["📦 ipfs.js<br/>IPFS Upload/Retrieve"]
+    end
+
+    Patient --> Login
+    Doctor --> Login
+    
+    Login --> Web3M
+    Web3M --> Wallets
+    
+    PatientDash --> ContractLib
+    PatientDash --> DBLib
+    PatientDash --> IPFSLib
+    
+    DoctorDash --> ContractLib
+    DoctorDash --> DBLib
+    DoctorDash --> IPFSLib
+    
+    Msg --> DBLib
+    Bell --> DBLib
+    
+    ContractLib --> SC
+    DBLib --> Firebase
+    IPFSLib --> IPFS
+    
+    Wallets --> SC
+    SC -.->|Events| Firebase
+    
+    classDef userStyle fill:#FFE5CC,stroke:#FF9500,stroke-width:3px,color:#000
+    classDef frontStyle fill:#B3E5FC,stroke:#01579B,stroke-width:2px,color:#000
+    classDef web3Style fill:#FFE0B2,stroke:#E65100,stroke-width:2px,color:#000
+    classDef blockStyle fill:#E1BEE7,stroke:#4A148C,stroke-width:3px,color:#000
+    classDef storageStyle fill:#C8E6C9,stroke:#1B5E20,stroke-width:2px,color:#000
+    classDef utilStyle fill:#F0F4C3,stroke:#9E9D24,stroke-width:2px,color:#000
+    
+    class Patient,Doctor userStyle
+    class Login,PatientDash,DoctorDash,Msg,Bell frontStyle
+    class Web3M,Wallets web3Style
+    class SC blockStyle
+    class IPFS,Firebase storageStyle
+    class ContractLib,DBLib,IPFSLib utilStyle
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+        mermaid.contentLoaded();
+    </script>
+</body>
+</html>
