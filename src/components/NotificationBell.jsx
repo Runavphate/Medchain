@@ -18,7 +18,7 @@ import { db } from "../utils/firebase";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const norm = (a) => (a || "").toLowerCase().replace(/[.#$[\]]/g, "_");
-const chatId = (a, b) => `chat_${[a, b].sort().join("_")}`;
+const chatId = (a, b) => `chat_${[norm(a), norm(b)].sort().join("_")}`;
 
 async function getLastSeen(myAddr, partnerId) {
   try {
@@ -105,7 +105,7 @@ function NotificationBell({ account, role, darkMode, grantedDoctors = [], grante
       const cid = chatId(account.toLowerCase(), partnerAddr.toLowerCase());
       const msgsRef = ref(db, `chats/${cid}/messages`);
 
-      const unsub = onValue(msgsRef, async (snap) => {
+      const unsubscribe = onValue(msgsRef, async (snap) => {
         if (!snap.exists()) { unreadMap[partnerAddr] = { count: 0 }; flush(); return; }
 
         const lastSeen = await getLastSeen(account, partnerAddr);
@@ -135,7 +135,7 @@ function NotificationBell({ account, role, darkMode, grantedDoctors = [], grante
         }
       });
 
-      unsubs.push(() => off(msgsRef, "value", unsub));
+      unsubs.push(unsubscribe);
     });
 
     return () => unsubs.forEach(fn => fn());

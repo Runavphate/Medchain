@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { ref, push, onValue, off } from "firebase/database";
 import { db } from "../utils/firebase";
 
+const normalizeAddress = (addr) => (addr || "").toLowerCase().replace(/[.#$[\]]/g, "_");
+
 function Messaging({ currentUserAddress, otherUserAddress, otherUserName, role, darkMode }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput]       = useState("");
@@ -9,7 +11,7 @@ function Messaging({ currentUserAddress, otherUserAddress, otherUserName, role, 
   const endRef = useRef(null);
 
   // Deterministic chat ID — same for both parties regardless of who opens first
-  const chatId = `chat_${[currentUserAddress, otherUserAddress].sort().join("_")}`;
+  const chatId = `chat_${[normalizeAddress(currentUserAddress), normalizeAddress(otherUserAddress)].sort().join("_")}`;
 
   // ── Real-time Firebase listener ─────────────────────────────────────────
   useEffect(() => {
@@ -53,7 +55,7 @@ function Messaging({ currentUserAddress, otherUserAddress, otherUserName, role, 
 
     const messagesRef = ref(db, `chats/${chatId}/messages`);
     push(messagesRef, {
-      sender:   currentUserAddress,
+      sender:   normalizeAddress(currentUserAddress),
       text:     text.trim(),
       role:     role,
       // clientTs for ordering (serverTimestamp is async and only for display)
